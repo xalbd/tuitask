@@ -1,5 +1,6 @@
 use crate::{
-    app::{action::Action, App, AppReturn},
+    action::Action,
+    app::{App, AppReturn},
     database::IOEvent,
     key::Key,
     task::TaskDate,
@@ -60,12 +61,12 @@ pub async fn do_action(app: &mut App, key: Key) -> AppReturn {
     AppReturn::Continue
 }
 
-pub fn update_hints(app: &mut App) {
-    app.keybind_hints = vec![
-        Action::Next.to_string(),
-        Action::Previous.to_string(),
-        Action::Reset.to_string(),
-        Action::DecreaseDueDate.to_string(),
+pub fn update_allowed_actions(app: &mut App) {
+    app.allowed_actions = vec![
+        Action::Next,
+        Action::Previous,
+        Action::Reset,
+        Action::DecreaseDueDate,
     ];
 }
 
@@ -78,7 +79,7 @@ pub fn ensure_date_present(app: &mut App, d: NaiveDate) {
                 let mut missing_dates: Vec<TaskDate> = vec![];
                 let mut current = d;
                 while current < first_date {
-                    missing_dates.push(TaskDate::Date(current.clone()));
+                    missing_dates.push(TaskDate::Date(current));
                     current = current + Days::new(1);
                 }
                 app.task_list.splice(..0, missing_dates);
@@ -89,7 +90,7 @@ pub fn ensure_date_present(app: &mut App, d: NaiveDate) {
             if d > last_date {
                 let mut current = last_date + Days::new(1);
                 while current <= d {
-                    app.task_list.push(TaskDate::Date(current.clone()));
+                    app.task_list.push(TaskDate::Date(current));
                     current = current + Days::new(1);
                 }
             }

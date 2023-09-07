@@ -1,7 +1,6 @@
-mod action;
 mod upcoming;
 
-use crate::{database::IOEvent, key::Key, task::TaskDate};
+use crate::{action::Action, database::IOEvent, key::Key, task::TaskDate};
 use ratatui::widgets::ListState;
 
 pub enum AppMode {
@@ -12,7 +11,7 @@ pub struct App {
     io_tx: tokio::sync::mpsc::Sender<IOEvent>,
     pub mode: AppMode,
     pub status_text: String,
-    pub keybind_hints: Vec<String>,
+    pub allowed_actions: Vec<Action>,
     pub task_list: Vec<TaskDate>,
     pub task_list_state: ListState,
     pub db_pool: sqlx::PgPool,
@@ -30,7 +29,7 @@ impl App {
             io_tx,
             mode: AppMode::Upcoming,
             status_text: "initializing".to_string(),
-            keybind_hints: vec![],
+            allowed_actions: vec![],
             task_list: vec![],
             task_list_state: ListState::default(),
             db_pool,
@@ -57,7 +56,7 @@ impl App {
         // Update keybind hints
         match mode {
             AppMode::Upcoming => {
-                upcoming::update_hints(self);
+                upcoming::update_allowed_actions(self);
             }
         }
 

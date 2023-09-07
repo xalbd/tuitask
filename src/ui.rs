@@ -1,4 +1,4 @@
-use crate::{app::App, task::TaskDate};
+use crate::{action::Action, app::App, task::TaskDate};
 use chrono::{naive::Days, NaiveDate};
 use ratatui::{
     prelude::{Backend, Constraint, Direction, Layout},
@@ -37,7 +37,7 @@ where
         }),
     };
     let height = chunks[1].height;
-    while prev_date != None
+    while prev_date.is_some()
         && (app.task_list.len() as isize) - (app.task_list_state.selected().unwrap_or(0) as isize)
             < (height as isize)
     {
@@ -67,7 +67,12 @@ where
         .highlight_symbol(">");
     f.render_stateful_widget(list, chunks[1], &mut app.task_list_state);
 
-    let hints: Vec<Span> = app.keybind_hints.iter().map(|h| Span::raw(h)).collect();
+    let hints: Vec<Span> = app
+        .allowed_actions
+        .iter()
+        .map(Action::to_string)
+        .map(Span::raw)
+        .collect();
     let hint_text = Paragraph::new(Line::from(hints))
         .block(Block::default().style(Style::default().fg(Color::White)));
     f.render_widget(hint_text, chunks[2]);
