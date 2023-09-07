@@ -7,7 +7,7 @@ pub enum Action {
     Next,
     Previous,
     Reset,
-    IncreaseDueDate,
+    DecreaseDueDate,
 }
 
 // Allow keybind hints to be displayed
@@ -18,7 +18,7 @@ impl Display for Action {
             Action::Next => "Next[j]  ",
             Action::Previous => "Previous[k]  ",
             Action::Reset => "Reset[r]  ",
-            Action::IncreaseDueDate => "Increase Due Date[d]",
+            Action::DecreaseDueDate => "Decrease Due Date[d]",
         };
         write!(f, "{}", str)
     }
@@ -34,7 +34,7 @@ impl TryFrom<Key> for Action {
             Key::Char('j') => Ok(Action::Next),
             Key::Char('k') => Ok(Action::Previous),
             Key::Char('r') => Ok(Action::Reset),
-            Key::Char('d') => Ok(Action::IncreaseDueDate),
+            Key::Char('d') => Ok(Action::DecreaseDueDate),
             _ => Err("Could not convert key to action"),
         }
     }

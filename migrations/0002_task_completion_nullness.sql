@@ -1,0 +1,3 @@
+ALTER TABLE task
+ALTER COLUMN completed
+SET NOT NULL;

@@ -8,6 +8,7 @@ pub struct Task {
     pub completed: bool,
 }
 
+#[derive(Clone)]
 pub enum TaskDate {
     Task(Task),
     Date(NaiveDate),
