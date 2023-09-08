@@ -1,17 +1,18 @@
-use crate::{action::Action, app::App, task::TaskDate};
+use crate::{
+    action::Action,
+    app::{App, AppPopUp},
+    task::TaskDate,
+};
 use chrono::{naive::Days, NaiveDate};
 use ratatui::{
-    prelude::{Backend, Constraint, Direction, Layout},
-    style::{Color, Modifier, Style},
-    text::{Line, Span},
-    widgets::{Block, BorderType, Borders, List, ListItem, Paragraph},
+    prelude::{Backend, Constraint, Direction, Layout, Rect},
+    style::{Color, Modifier, Style, Stylize},
+    text::{Line, Span, Text},
+    widgets::{Block, BorderType, Borders, Clear, List, ListItem, Paragraph, Wrap},
     Frame,
 };
 
-pub fn draw<B>(f: &mut Frame<B>, app: &mut App)
-where
-    B: Backend,
-{
+pub fn draw<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints(
@@ -76,4 +77,33 @@ where
     let hint_text = Paragraph::new(Line::from(hints))
         .block(Block::default().style(Style::default().fg(Color::White)));
     f.render_widget(hint_text, chunks[2]);
+
+    if app.pop_up.is_some() {
+        match app.pop_up.as_ref().unwrap() {
+            AppPopUp::TaskEditor => {
+                draw_task_editor(f, app);
+            }
+        }
+    }
+}
+
+fn draw_task_editor<B: Backend>(f: &mut Frame<B>, app: &mut App) {
+    let all_area = f.size();
+    let desired_area = Rect::new(
+        all_area.width.saturating_sub(20) / 2,
+        all_area.height.saturating_sub(5) / 2,
+        20.min(all_area.width),
+        5.min(all_area.height),
+    );
+    f.render_widget(Clear, desired_area);
+
+    let text = format!("{} ", app.name_edit.text);
+    let underlined = app.name_edit.index;
+
+    let textarea = Paragraph::new(text)
+        .block(Block::new().title("Input Test").borders(Borders::ALL))
+        .style(Style::default())
+        .wrap(Wrap { trim: true });
+    f.set_cursor(desired_area.x + underlined as u16 + 1, desired_area.y + 1);
+    f.render_widget(textarea, desired_area);
 }

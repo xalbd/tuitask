@@ -2,8 +2,11 @@ use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 #[derive(PartialEq)]
 pub enum Key {
+    Number(char),
     Char(char),
     Ctrl(char),
+    Enter,
+    Esc,
     Unused,
 }
 
@@ -19,7 +22,17 @@ impl From<KeyEvent> for Key {
             KeyEvent {
                 code: KeyCode::Char(c),
                 ..
-            } => Key::Char(c),
+            } => match c.to_digit(10) {
+                Some(_) => Key::Number(c),
+                None => Key::Char(c),
+            },
+            KeyEvent {
+                code: KeyCode::Enter,
+                ..
+            } => Key::Enter,
+            KeyEvent {
+                code: KeyCode::Esc, ..
+            } => Key::Esc,
             _ => Key::Unused,
         }
     }

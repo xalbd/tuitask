@@ -1,15 +1,29 @@
+mod task_editor;
 mod upcoming;
 
 use crate::{action::Action, database::IOEvent, key::Key, task::TaskDate};
 use ratatui::widgets::ListState;
 
+#[derive(Clone)]
 pub enum AppMode {
     Upcoming,
+}
+
+pub enum AppPopUp {
+    TaskEditor,
+}
+
+#[derive(Clone)]
+pub struct TextBox {
+    pub text: String,
+    pub index: usize,
 }
 
 pub struct App {
     io_tx: tokio::sync::mpsc::Sender<IOEvent>,
     pub mode: AppMode,
+    pub pop_up: Option<AppPopUp>,
+    pub name_edit: TextBox,
     pub status_text: String,
     pub allowed_actions: Vec<Action>,
     pub task_list: Vec<TaskDate>,
@@ -28,6 +42,11 @@ impl App {
         Self {
             io_tx,
             mode: AppMode::Upcoming,
+            pop_up: None,
+            name_edit: TextBox {
+                text: "testing".to_string(),
+                index: 0,
+            },
             status_text: "initializing".to_string(),
             allowed_actions: vec![],
             task_list: vec![],
@@ -44,24 +63,47 @@ impl App {
     }
 
     pub async fn do_action(&mut self, key: Key) -> AppReturn {
-        match key {
-            Key::Char('q') | Key::Ctrl('c') => AppReturn::Quit,
-            _ => match self.mode {
-                AppMode::Upcoming => upcoming::do_action(self, key).await,
-            },
+        if self.pop_up.is_none() {
+            match key {
+                Key::Char('i') => {
+                    self.enable_pop_up(AppPopUp::TaskEditor);
+                    AppReturn::Continue
+                }
+                _ => match self.mode {
+                    AppMode::Upcoming => upcoming::do_action(self, key).await,
+                },
+            }
+        } else {
+            let p = self.pop_up.as_ref().unwrap();
+            match p {
+                AppPopUp::TaskEditor => task_editor::do_action(self, key).await,
+            }
         }
     }
 
-    pub fn switch_mode(&mut self, mode: AppMode) {
-        // Update keybind hints
+    fn switch_mode(&mut self, mode: AppMode) {
         match mode {
             AppMode::Upcoming => {
                 upcoming::update_allowed_actions(self);
             }
         }
 
-        // Indicate mode to both app logic and UI
         self.mode = mode;
+    }
+
+    fn enable_pop_up(&mut self, pop_up: AppPopUp) {
+        match pop_up {
+            AppPopUp::TaskEditor => {
+                task_editor::initialize(self);
+            }
+        }
+
+        self.pop_up = Some(pop_up);
+    }
+
+    pub fn disable_pop_up(&mut self) {
+        self.pop_up = None;
+        self.switch_mode(self.mode.clone());
     }
 
     pub async fn update_on_tick(&self) -> AppReturn {

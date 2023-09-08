@@ -43,21 +43,20 @@ pub async fn do_action(app: &mut App, key: Key) -> AppReturn {
                     ensure_date_present(app, t.due_date);
                     if let Some(pos) = app.task_list.iter().position(|x| {
                         if let TaskDate::Date(y) = x {
-                            *y == t.due_date
+                            (*y - Days::new(1)) == t.due_date
                         } else {
                             false
                         }
                     }) {
-                        app.task_list.insert(pos + 1, TaskDate::Task(t.clone()));
-                        app.task_list_state.select(Some(pos + 1));
+                        app.task_list.insert(pos, TaskDate::Task(t.clone()));
+                        app.task_list_state.select(Some(pos));
                     }
                     app.dispatch(IOEvent::UpdateTask(t)).await;
                 }
             }
-            _ => (),
-        };
+            Action::Quit => return AppReturn::Quit,
+        }
     }
-
     AppReturn::Continue
 }
 
@@ -67,6 +66,7 @@ pub fn update_allowed_actions(app: &mut App) {
         Action::Previous,
         Action::Reset,
         Action::DecreaseDueDate,
+        Action::Quit,
     ];
 }
 

@@ -18,7 +18,7 @@ impl Display for Action {
             Action::Next => "Next[j]  ",
             Action::Previous => "Previous[k]  ",
             Action::Reset => "Reset[r]  ",
-            Action::DecreaseDueDate => "Decrease Due Date[d]",
+            Action::DecreaseDueDate => "Decrease Due Date[d]  ",
         };
         write!(f, "{}", str)
     }
@@ -30,7 +30,7 @@ impl TryFrom<Key> for Action {
     type Error = &'static str;
     fn try_from(value: Key) -> Result<Self, Self::Error> {
         match value {
-            Key::Char('q') | Key::Ctrl('c') => Ok(Action::Quit),
+            Key::Char('q') | Key::Ctrl('c') | Key::Esc => Ok(Action::Quit),
             Key::Char('j') => Ok(Action::Next),
             Key::Char('k') => Ok(Action::Previous),
             Key::Char('r') => Ok(Action::Reset),
