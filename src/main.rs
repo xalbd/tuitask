@@ -25,12 +25,12 @@ async fn main() -> Result<(), Box<dyn error::Error>> {
     let (io_tx, mut io_rx) = mpsc::channel::<IOEvent>(100);
 
     // Create app and wrap in Mutex/Arc to allow IO/UI to both mutate data
-    let app = Arc::new(tokio::sync::Mutex::new(app::App::new(io_tx.clone(), pool)));
+    let app = Arc::new(tokio::sync::Mutex::new(app::App::new(io_tx.clone())));
     let app_ui = Arc::clone(&app);
 
     // Spawn database handler task
     tokio::spawn(async move {
-        let mut handler = IOHandler::new(app);
+        let mut handler = IOHandler::new(app, pool);
         while let Some(io_event) = io_rx.recv().await {
             // TODO: handle error
             let _ = handler.handle_io(io_event).await;
@@ -63,7 +63,6 @@ async fn start_ui(app: Arc<tokio::sync::Mutex<App>>) -> Result<(), Box<dyn error
 
         if result == AppReturn::Quit {
             app_event_handler.close();
-            app.db_pool.close().await;
             break;
         }
     }

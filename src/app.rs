@@ -28,7 +28,6 @@ pub struct App {
     pub allowed_actions: Vec<Action>,
     pub task_list: Vec<TaskDate>,
     pub task_list_state: ListState,
-    pub db_pool: sqlx::PgPool,
 }
 
 #[derive(PartialEq)]
@@ -38,7 +37,7 @@ pub enum AppReturn {
 }
 
 impl App {
-    pub fn new(io_tx: tokio::sync::mpsc::Sender<IOEvent>, db_pool: sqlx::PgPool) -> Self {
+    pub fn new(io_tx: tokio::sync::mpsc::Sender<IOEvent>) -> Self {
         Self {
             io_tx,
             mode: AppMode::Upcoming,
@@ -51,7 +50,6 @@ impl App {
             allowed_actions: vec![],
             task_list: vec![],
             task_list_state: ListState::default(),
-            db_pool,
         }
     }
 
@@ -84,7 +82,7 @@ impl App {
     fn switch_mode(&mut self, mode: AppMode) {
         match mode {
             AppMode::Upcoming => {
-                upcoming::update_allowed_actions(self);
+                upcoming::initialize(self);
             }
         }
 
@@ -113,6 +111,8 @@ impl App {
     // Dispatch database work to seperate thread
     pub async fn dispatch(&self, action: IOEvent) {
         // TODO: handle error
-        let _ = self.io_tx.send(action).await;
+        if self.io_tx.send(action).await.is_err() {
+            panic!("database task not receiving messages");
+        }
     }
 }
