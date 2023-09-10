@@ -60,7 +60,7 @@ pub async fn do_action(app: &mut App, key: Key) -> AppReturn {
     AppReturn::Continue
 }
 
-pub fn update_allowed_actions(app: &mut App) {
+pub fn initialize(app: &mut App) {
     app.allowed_actions = vec![
         Action::Next,
         Action::Previous,
@@ -70,7 +70,7 @@ pub fn update_allowed_actions(app: &mut App) {
     ];
 }
 
-pub fn ensure_date_present(app: &mut App, d: NaiveDate) {
+fn ensure_date_present(app: &mut App, d: NaiveDate) {
     if app.task_list.is_empty() {
         app.task_list.push(TaskDate::Date(d));
     } else {

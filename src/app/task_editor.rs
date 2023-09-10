@@ -21,7 +21,7 @@ pub async fn do_action(app: &mut App, key: Key) -> AppReturn {
             }
         }
         Key::Enter => {
-            if app.name_edit.text.len() > 0 {
+            if !app.name_edit.text.is_empty() {
                 if let TaskDate::Task(mut t) =
                     app.task_list[app.task_list_state.selected().unwrap()].clone()
                 {
@@ -33,6 +33,7 @@ pub async fn do_action(app: &mut App, key: Key) -> AppReturn {
                         TaskDate::Task(t.clone()),
                     );
                     app.dispatch(IOEvent::UpdateTask(t)).await;
+                    app.disable_pop_up();
                 }
             }
         }

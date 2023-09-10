@@ -6,8 +6,8 @@ use crate::{
 use chrono::{naive::Days, NaiveDate};
 use ratatui::{
     prelude::{Backend, Constraint, Direction, Layout, Rect},
-    style::{Color, Modifier, Style, Stylize},
-    text::{Line, Span, Text},
+    style::{Color, Modifier, Style},
+    text::{Line, Span},
     widgets::{Block, BorderType, Borders, Clear, List, ListItem, Paragraph, Wrap},
     Frame,
 };
