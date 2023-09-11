@@ -26,6 +26,22 @@ pub async fn do_action(app: &mut App, key: Key) -> AppReturn {
                 *current_field = proposed_edit;
             }
         }
+        Key::Left => {
+            if current_field.index > 0 {
+                current_field.index -= 1;
+            }
+        }
+        Key::Right => {
+            if current_field.index < current_field.text.len() {
+                current_field.index += 1;
+            }
+        }
+        Key::Backspace => {
+            if current_field.index > 0 {
+                current_field.text.remove(current_field.index - 1);
+                current_field.index -= 1;
+            }
+        }
         Key::Enter => {
             if !app.name_edit.text.is_empty() {
                 if let TaskDate::Task(mut t) =
