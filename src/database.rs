@@ -32,12 +32,11 @@ impl IOHandler {
 
     // Loads all incomplete tasks and fills in dates; loads into app for use in display in Upcoming mode
     async fn grab_upcoming(&mut self) -> Result<(), sqlx::Error> {
-        let mut app = self.app.lock().await;
-
         let rows = sqlx::query("SELECT * FROM task WHERE completed = FALSE ORDER BY due_date")
             .fetch_all(&self.db_pool)
             .await?;
 
+        let mut app = self.app.lock().await;
         app.task_list = vec![];
         let new_selection = app.task_list_state.selected().unwrap_or(0);
         app.task_list_state.select(Some(new_selection));

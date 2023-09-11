@@ -2,6 +2,7 @@ mod task_editor;
 mod upcoming;
 
 use crate::{action::Action, database::IOEvent, key::Key, task::TaskDate};
+use chrono::NaiveDate;
 use ratatui::widgets::ListState;
 
 #[derive(Clone)]
@@ -24,6 +25,7 @@ pub struct App {
     pub mode: AppMode,
     pub pop_up: Option<AppPopUp>,
     pub name_edit: TextBox,
+    pub date_edit: NaiveDate,
     pub status_text: String,
     pub allowed_actions: Vec<Action>,
     pub task_list: Vec<TaskDate>,
@@ -46,6 +48,7 @@ impl App {
                 text: "testing".to_string(),
                 index: 0,
             },
+            date_edit: NaiveDate::from_ymd_opt(2023, 11, 29).unwrap(),
             status_text: "initializing".to_string(),
             allowed_actions: vec![],
             task_list: vec![],
