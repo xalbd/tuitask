@@ -7,6 +7,7 @@ pub enum Key {
     Ctrl(char),
     Enter,
     Esc,
+    Tab,
     Unused,
 }
 
@@ -30,6 +31,9 @@ impl From<KeyEvent> for Key {
                 code: KeyCode::Enter,
                 ..
             } => Key::Enter,
+            KeyEvent {
+                code: KeyCode::Tab, ..
+            } => Key::Tab,
             KeyEvent {
                 code: KeyCode::Esc, ..
             } => Key::Esc,

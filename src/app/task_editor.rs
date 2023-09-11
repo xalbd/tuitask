@@ -1,23 +1,30 @@
 use crate::{
     action::Action,
-    app::{App, AppReturn, TextBox},
+    app::{App, AppReturn, SelectedField, TextBox},
     database::IOEvent,
     key::Key,
     task::TaskDate,
 };
 
 pub async fn do_action(app: &mut App, key: Key) -> AppReturn {
+    let current_field: &mut TextBox = match app.task_edit_field {
+        SelectedField::Name => &mut app.name_edit,
+        SelectedField::Year => &mut app.year_edit,
+        SelectedField::Month => &mut app.month_edit,
+        SelectedField::Date => &mut app.date_edit,
+    };
+
     match key {
         Key::Esc => {
             app.disable_pop_up();
         }
         Key::Number(c) | Key::Char(c) => {
             let proposed_edit = TextBox {
-                text: format!("{}{}", app.name_edit.text, c),
-                index: app.name_edit.index + 1,
+                text: format!("{}{}", current_field.text, c),
+                index: current_field.index + 1,
             };
             if verify_name(&proposed_edit.text) {
-                app.name_edit = proposed_edit;
+                *current_field = proposed_edit;
             }
         }
         Key::Enter => {
@@ -36,6 +43,16 @@ pub async fn do_action(app: &mut App, key: Key) -> AppReturn {
                     app.disable_pop_up();
                 }
             }
+        }
+        Key::Tab => {
+            let next = match app.task_edit_field {
+                SelectedField::Name => SelectedField::Year,
+                SelectedField::Year => SelectedField::Month,
+                SelectedField::Month => SelectedField::Date,
+                SelectedField::Date => SelectedField::Name,
+            };
+
+            app.task_edit_field = next;
         }
         _ => (),
     }

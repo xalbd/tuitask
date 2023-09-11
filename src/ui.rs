@@ -1,9 +1,9 @@
 use crate::{
     action::Action,
-    app::{App, AppPopUp},
+    app::{App, AppPopUp, SelectedField},
     task::TaskDate,
 };
-use chrono::{naive::Days, Datelike, NaiveDate};
+use chrono::{naive::Days, NaiveDate};
 use ratatui::{
     prelude::{Backend, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
@@ -119,14 +119,11 @@ fn draw_task_editor<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .margin(1)
         .split(hint_layout[0]);
 
-    let textarea = Paragraph::new(format!("{} ", app.name_edit.text))
+    let textarea = Paragraph::new(app.name_edit.text.clone())
         .block(Block::new().title("Name").borders(Borders::ALL))
         .style(Style::default())
         .wrap(Wrap { trim: true });
-    f.set_cursor(
-        vertical_layout[0].x + app.name_edit.index as u16 + 1,
-        vertical_layout[0].y + 1,
-    );
+
     f.render_widget(textarea, vertical_layout[0]);
 
     let date_layout = Layout::default()
@@ -140,15 +137,23 @@ fn draw_task_editor<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         ])
         .split(vertical_layout[1]);
 
-    let year = Paragraph::new(app.date_edit.year().to_string())
+    let year = Paragraph::new(app.year_edit.text.clone())
         .block(Block::new().title("Y").borders(Borders::ALL));
     f.render_widget(year, date_layout[0]);
 
-    let month = Paragraph::new(app.date_edit.month().to_string())
+    let month = Paragraph::new(app.month_edit.text.clone())
         .block(Block::new().title("M").borders(Borders::ALL));
     f.render_widget(month, date_layout[2]);
 
-    let day = Paragraph::new(app.date_edit.day().to_string())
+    let day = Paragraph::new(app.date_edit.text.clone())
         .block(Block::new().title("D").borders(Borders::ALL));
     f.render_widget(day, date_layout[4]);
+
+    let (active_area, active_index) = match app.task_edit_field {
+        SelectedField::Name => (vertical_layout[0], app.name_edit.index),
+        SelectedField::Year => (date_layout[0], app.year_edit.index),
+        SelectedField::Month => (date_layout[2], app.month_edit.index),
+        SelectedField::Date => (date_layout[4], app.date_edit.index),
+    };
+    f.set_cursor(active_area.x + active_index as u16 + 1, active_area.y + 1);
 }
