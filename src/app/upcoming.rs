@@ -8,14 +8,14 @@ use chrono::{Days, NaiveDate};
 
 pub async fn do_action(app: &mut App, key: Key) -> AppReturn {
     match key {
-        Key::Char('j') => {
+        Key::Char('j') | Key::Down => {
             let i = match app.task_list_state.selected() {
                 Some(i) => i + 1,
                 None => 0,
             };
             app.task_list_state.select(Some(i));
         }
-        Key::Char('k') => {
+        Key::Char('k') | Key::Up => {
             let i = match app.task_list_state.selected() {
                 Some(i) => {
                     if i > 0 {
