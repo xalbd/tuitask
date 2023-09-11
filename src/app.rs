@@ -1,7 +1,7 @@
 mod task_editor;
 mod upcoming;
 
-use crate::{action::Action, database::IOEvent, key::Key, task::TaskDate};
+use crate::{database::IOEvent, key::Key, task::TaskDate};
 use ratatui::widgets::ListState;
 
 #[derive(Clone)]
@@ -36,7 +36,7 @@ pub struct App {
     pub date_edit: TextBox,
     pub task_edit_field: SelectedField,
     pub status_text: String,
-    pub allowed_actions: Vec<Action>,
+    pub keybind_hints: String,
     pub task_list: Vec<TaskDate>,
     pub task_list_state: ListState,
 }
@@ -71,7 +71,7 @@ impl App {
             },
             task_edit_field: SelectedField::Name,
             status_text: "initializing".to_string(),
-            allowed_actions: vec![],
+            keybind_hints: "".to_string(),
             task_list: vec![],
             task_list_state: ListState::default(),
         }

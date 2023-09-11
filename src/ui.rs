@@ -1,5 +1,4 @@
 use crate::{
-    action::Action,
     app::{App, AppPopUp, SelectedField},
     task::TaskDate,
 };
@@ -7,7 +6,7 @@ use chrono::{naive::Days, NaiveDate};
 use ratatui::{
     prelude::{Backend, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
-    text::{Line, Span},
+    text::Span,
     widgets::{Block, BorderType, Borders, Clear, List, ListItem, Paragraph, Wrap},
     Frame,
 };
@@ -68,13 +67,7 @@ pub fn draw<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .highlight_symbol(">");
     f.render_stateful_widget(list, chunks[1], &mut app.task_list_state);
 
-    let hints: Vec<Span> = app
-        .allowed_actions
-        .iter()
-        .map(Action::to_string)
-        .map(Span::raw)
-        .collect();
-    let hint_text = Paragraph::new(Line::from(hints))
+    let hint_text = Paragraph::new(app.keybind_hints.clone())
         .block(Block::default().style(Style::default().fg(Color::White)));
     f.render_widget(hint_text, chunks[2]);
 

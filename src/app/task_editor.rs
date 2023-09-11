@@ -1,5 +1,4 @@
 use crate::{
-    action::Action,
     app::{App, AppReturn, SelectedField, TextBox},
     database::IOEvent,
     key::Key,
@@ -15,7 +14,7 @@ pub async fn do_action(app: &mut App, key: Key) -> AppReturn {
     };
 
     match key {
-        Key::Esc => {
+        Key::Esc | Key::Ctrl('c') => {
             app.disable_pop_up();
         }
         Key::Number(c) | Key::Char(c) => {
@@ -64,7 +63,7 @@ pub fn initialize(app: &mut App) -> AppReturn {
         text: "".to_string(),
         index: 0,
     };
-    app.allowed_actions = vec![Action::Quit];
+    app.keybind_hints = "Exit[esc/ctrl-c]".to_string();
     AppReturn::Continue
 }
 
