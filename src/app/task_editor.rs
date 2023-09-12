@@ -4,6 +4,7 @@ use crate::{
     key::Key,
     task::TaskDate,
 };
+use chrono::Datelike;
 
 pub async fn do_action(app: &mut App, key: Key) -> AppReturn {
     let current_field: &mut TextBox = match app.task_edit_field {
@@ -18,12 +19,20 @@ pub async fn do_action(app: &mut App, key: Key) -> AppReturn {
             app.disable_pop_up();
         }
         Key::Number(c) | Key::Char(c) => {
-            let proposed_edit = TextBox {
-                text: format!("{}{}", current_field.text, c),
-                index: current_field.index + 1,
-            };
-            if verify_name(&proposed_edit.text) {
-                *current_field = proposed_edit;
+            let mut proposed_text = current_field.text.clone();
+            proposed_text.insert(current_field.index, c);
+
+            if proposed_text.len() <= current_field.max_length
+                && match app.task_edit_field {
+                    SelectedField::Name => true,
+                    _ => proposed_text.parse::<isize>().is_ok(),
+                }
+            {
+                *current_field = TextBox {
+                    text: proposed_text,
+                    index: current_field.index + 1,
+                    max_length: current_field.max_length,
+                };
             }
         }
         Key::Left => {
@@ -75,14 +84,47 @@ pub async fn do_action(app: &mut App, key: Key) -> AppReturn {
 }
 
 pub fn initialize(app: &mut App) -> AppReturn {
+    let (name, year, month, date): (String, String, String, String);
+    match app.task_list[app.task_list_state.selected().unwrap()].clone() {
+        TaskDate::Task(t) => {
+            (name, year, month, date) = (
+                t.name,
+                t.due_date.year().to_string(),
+                t.due_date.month().to_string(),
+                t.due_date.day().to_string(),
+            );
+        }
+        TaskDate::Date(d) => {
+            (name, year, month, date) = (
+                "".to_string(),
+                d.year().to_string(),
+                d.month().to_string(),
+                d.day().to_string(),
+            );
+        }
+    };
+
     app.name_edit = TextBox {
-        text: "".to_string(),
-        index: 0,
+        index: name.len(),
+        text: name,
+        ..app.name_edit
+    };
+    app.year_edit = TextBox {
+        index: year.len(),
+        text: year,
+        ..app.year_edit
+    };
+    app.month_edit = TextBox {
+        index: month.len(),
+        text: month,
+        ..app.month_edit
+    };
+    app.date_edit = TextBox {
+        index: date.len(),
+        text: date,
+        ..app.date_edit
     };
     app.keybind_hints = "Exit[esc/ctrl-c]".to_string();
-    AppReturn::Continue
-}
 
-fn verify_name(name: &str) -> bool {
-    name.len() < 15
+    AppReturn::Continue
 }

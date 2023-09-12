@@ -122,11 +122,10 @@ fn draw_task_editor<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     let date_layout = Layout::default()
         .direction(Direction::Horizontal)
         .constraints(vec![
-            Constraint::Percentage(20),
-            Constraint::Percentage(20),
-            Constraint::Percentage(20),
-            Constraint::Percentage(20),
-            Constraint::Percentage(20),
+            Constraint::Max(6),
+            Constraint::Max(4),
+            Constraint::Max(4),
+            Constraint::Min(0),
         ])
         .split(vertical_layout[1]);
 
@@ -136,17 +135,17 @@ fn draw_task_editor<B: Backend>(f: &mut Frame<B>, app: &mut App) {
 
     let month = Paragraph::new(app.month_edit.text.clone())
         .block(Block::new().title("M").borders(Borders::ALL));
-    f.render_widget(month, date_layout[2]);
+    f.render_widget(month, date_layout[1]);
 
     let day = Paragraph::new(app.date_edit.text.clone())
         .block(Block::new().title("D").borders(Borders::ALL));
-    f.render_widget(day, date_layout[4]);
+    f.render_widget(day, date_layout[2]);
 
     let (active_area, active_index) = match app.task_edit_field {
         SelectedField::Name => (vertical_layout[0], app.name_edit.index),
         SelectedField::Year => (date_layout[0], app.year_edit.index),
-        SelectedField::Month => (date_layout[2], app.month_edit.index),
-        SelectedField::Date => (date_layout[4], app.date_edit.index),
+        SelectedField::Month => (date_layout[1], app.month_edit.index),
+        SelectedField::Date => (date_layout[2], app.date_edit.index),
     };
     f.set_cursor(active_area.x + active_index as u16 + 1, active_area.y + 1);
 }

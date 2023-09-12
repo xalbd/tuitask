@@ -13,12 +13,14 @@ pub enum AppPopUp {
     TaskEditor,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct TextBox {
     pub text: String,
     pub index: usize,
+    pub max_length: usize,
 }
 
+#[derive(PartialEq)]
 pub enum SelectedField {
     Name,
     Year,
@@ -54,20 +56,20 @@ impl App {
             mode: AppMode::Upcoming,
             pop_up: None,
             name_edit: TextBox {
-                text: "testing".to_string(),
-                index: 0,
+                max_length: 36,
+                ..Default::default()
             },
             year_edit: TextBox {
-                text: "0".to_string(),
-                index: 0,
+                max_length: 4,
+                ..Default::default()
             },
             month_edit: TextBox {
-                text: "0".to_string(),
-                index: 0,
+                max_length: 2,
+                ..Default::default()
             },
             date_edit: TextBox {
-                text: "0".to_string(),
-                index: 0,
+                max_length: 2,
+                ..Default::default()
             },
             task_edit_field: SelectedField::Name,
             status_text: "initializing".to_string(),

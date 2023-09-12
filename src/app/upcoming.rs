@@ -32,7 +32,6 @@ pub async fn do_action(app: &mut App, key: Key) -> AppReturn {
             app.task_list_state.select(Some(0));
         }
         Key::Char('d') => {
-            app.dispatch(IOEvent::GrabUpcoming).await;
             if let TaskDate::Task(mut t) =
                 app.task_list[app.task_list_state.selected().unwrap()].clone()
             {
