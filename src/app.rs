@@ -76,7 +76,7 @@ impl App {
                 ..Default::default()
             },
             task_edit_field: SelectedField::Name,
-            status_text: "initializing".to_string(),
+            status_text: "".to_string(),
             keybind_hints: "".to_string(),
             task_list: TaskList::new(),
             task_list_state: ListState::default(),
@@ -85,9 +85,8 @@ impl App {
 
     // Call to perform initial data loads
     pub async fn initialize(&mut self) {
-        self.dispatch(IOEvent::GrabUpcoming).await;
+        self.dispatch(IOEvent::LoadTasks).await;
         self.switch_mode(AppMode::Upcoming);
-        self.status_text = "initialized".to_string();
     }
 
     pub async fn do_action(&mut self, key: Key) -> AppReturn {

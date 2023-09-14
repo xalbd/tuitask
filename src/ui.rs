@@ -23,7 +23,7 @@ pub fn draw<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         )
         .split(f.size());
 
-    let title = Paragraph::new(app.status_text.to_string())
+    let title = Paragraph::new("Upcoming".to_string())
         .style(Style::default().fg(Color::LightCyan))
         .block(Block::default().style(Style::default().fg(Color::White)));
     f.render_widget(title, chunks[0]);
@@ -53,9 +53,17 @@ pub fn draw<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .highlight_symbol(">");
     f.render_stateful_widget(list, chunks[1], &mut app.task_list_state);
 
+    let footer_layout = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints(vec![Constraint::Percentage(75), Constraint::Percentage(25)])
+        .split(chunks[2]);
+
     let hint_text = Paragraph::new(app.keybind_hints.clone())
         .block(Block::default().style(Style::default().fg(Color::White)));
-    f.render_widget(hint_text, chunks[2]);
+    f.render_widget(hint_text, footer_layout[0]);
+
+    let status_text = Paragraph::new(app.status_text.to_string());
+    f.render_widget(status_text, footer_layout[1]);
 
     if app.pop_up.is_some() {
         match app.pop_up.as_ref().unwrap() {
