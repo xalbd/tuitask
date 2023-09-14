@@ -2,7 +2,6 @@ use crate::{
     app::{App, AppPopUp, SelectedField},
     task::TaskDate,
 };
-use chrono::{naive::Days, NaiveDate};
 use ratatui::{
     prelude::{Backend, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
@@ -29,24 +28,11 @@ pub fn draw<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .block(Block::default().style(Style::default().fg(Color::White)));
     f.render_widget(title, chunks[0]);
 
-    let mut prev_date: Option<NaiveDate> = match app.task_list.len() {
-        0 => None,
-        n => Some(match &app.task_list[n - 1] {
-            TaskDate::Task(t) => t.due_date,
-            TaskDate::Date(d) => *d,
-        }),
-    };
-    let height = chunks[1].height;
-    while prev_date.is_some()
-        && (app.task_list.len() as isize) - (app.task_list_state.selected().unwrap_or(0) as isize)
-            < (height as isize)
-    {
-        prev_date = Some(prev_date.unwrap() + Days::new(1));
-        app.task_list.push(TaskDate::Date(prev_date.unwrap()))
-    }
+    let height = chunks[1].height as usize;
 
     let list_items: Vec<ListItem> = app
         .task_list
+        .get_upcoming_list(app.task_list_state.selected().unwrap_or(0), height)
         .iter()
         .map(|i| {
             ListItem::new(Span::raw(match i {

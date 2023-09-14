@@ -1,7 +1,7 @@
 mod task_editor;
 mod upcoming;
 
-use crate::{database::IOEvent, key::Key, task::TaskDate};
+use crate::{database::IOEvent, key::Key, task::TaskList};
 use ratatui::widgets::ListState;
 
 #[derive(Clone)]
@@ -30,16 +30,20 @@ pub enum SelectedField {
 
 pub struct App {
     io_tx: tokio::sync::mpsc::Sender<IOEvent>,
+
     pub mode: AppMode,
     pub pop_up: Option<AppPopUp>,
+
+    pub task_edit_field: SelectedField,
     pub name_edit: TextBox,
     pub year_edit: TextBox,
     pub month_edit: TextBox,
     pub date_edit: TextBox,
-    pub task_edit_field: SelectedField,
+
     pub status_text: String,
     pub keybind_hints: String,
-    pub task_list: Vec<TaskDate>,
+
+    pub task_list: TaskList,
     pub task_list_state: ListState,
 }
 
@@ -74,7 +78,7 @@ impl App {
             task_edit_field: SelectedField::Name,
             status_text: "initializing".to_string(),
             keybind_hints: "".to_string(),
-            task_list: vec![],
+            task_list: TaskList::new(),
             task_list_state: ListState::default(),
         }
     }

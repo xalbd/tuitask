@@ -1,14 +1,11 @@
-use crate::{
-    app::App,
-    task::{Task, TaskDate},
-};
-use chrono::{Days, NaiveDate};
+use crate::{app::App, task::Task};
 use sqlx::Row;
 use std::sync::Arc;
 
 pub enum IOEvent {
     GrabUpcoming,
     UpdateTask(Task),
+    CreateTask(Task),
 }
 
 pub struct IOHandler {
@@ -25,6 +22,7 @@ impl IOHandler {
         match io_event {
             IOEvent::GrabUpcoming => self.grab_upcoming().await?,
             IOEvent::UpdateTask(t) => self.update_task(t).await?,
+            IOEvent::CreateTask(t) => self.create_task(t).await?,
         };
 
         Ok(())
@@ -32,40 +30,23 @@ impl IOHandler {
 
     // Loads all incomplete tasks and fills in dates; loads into app for use in display in Upcoming mode
     async fn grab_upcoming(&mut self) -> Result<(), sqlx::Error> {
-        let rows = sqlx::query("SELECT * FROM task WHERE completed = FALSE ORDER BY due_date")
+        let rows = sqlx::query("SELECT * FROM task WHERE completed = FALSE")
             .fetch_all(&self.db_pool)
             .await?;
 
-        let mut app = self.app.lock().await;
-        app.task_list = vec![];
-        let new_selection = app.task_list_state.selected().unwrap_or(0);
-        app.task_list_state.select(Some(new_selection));
-
-        let mut prev_date: Option<NaiveDate> = None;
-        for r in rows {
-            let d = match prev_date {
-                Some(mut d) => {
-                    while d < r.get("due_date") {
-                        d = d + Days::new(1);
-                        app.task_list.push(TaskDate::Date(d));
-                    }
-                    d
-                }
-                None => {
-                    let d: NaiveDate = r.get("due_date");
-                    app.task_list.push(TaskDate::Date(d));
-                    d
-                }
-            };
-            prev_date = Some(d);
-
-            app.task_list.push(TaskDate::Task(Task {
+        let task_list: Vec<Task> = rows
+            .iter()
+            .map(|r| Task {
                 id: r.get("id"),
                 name: r.get("name"),
                 due_date: r.get("due_date"),
                 completed: r.get("completed"),
-            }));
-        }
+            })
+            .collect();
+
+        let mut app = self.app.lock().await;
+        app.task_list.tasks = task_list;
+        app.task_list_state.select(Some(0));
 
         Ok(())
     }
@@ -79,6 +60,26 @@ impl IOHandler {
             .bind(t.id)
             .execute(&self.db_pool)
             .await?;
+
+        Ok(())
+    }
+
+    async fn create_task(&mut self, t: Task) -> Result<(), sqlx::Error> {
+        let created_task_id = sqlx::query(
+            "INSERT INTO task (name, due_date, completed) VALUES ($1, $2, $3) RETURNING id",
+        )
+        .bind(t.name.clone())
+        .bind(t.due_date)
+        .bind(t.completed)
+        .fetch_one(&self.db_pool)
+        .await?;
+
+        let mut app = self.app.lock().await;
+        app.task_list.tasks.push(Task {
+            id: created_task_id.get("id"),
+            ..t
+        });
+        app.task_list.tasks.sort();
 
         Ok(())
     }

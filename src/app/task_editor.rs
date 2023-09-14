@@ -2,9 +2,9 @@ use crate::{
     app::{App, AppReturn, SelectedField, TextBox},
     database::IOEvent,
     key::Key,
-    task::TaskDate,
+    task::{Task, TaskDate},
 };
-use chrono::Datelike;
+use chrono::{Datelike, NaiveDate};
 
 pub async fn do_action(app: &mut App, key: Key) -> AppReturn {
     let current_field: &mut TextBox = match app.task_edit_field {
@@ -52,18 +52,47 @@ pub async fn do_action(app: &mut App, key: Key) -> AppReturn {
             }
         }
         Key::Enter => {
-            if !app.name_edit.text.is_empty() {
-                if let TaskDate::Task(mut t) =
-                    app.task_list[app.task_list_state.selected().unwrap()].clone()
-                {
-                    t.name = app.name_edit.text.clone();
-                    app.task_list
-                        .remove(app.task_list_state.selected().unwrap());
-                    app.task_list.insert(
-                        app.task_list_state.selected().unwrap(),
-                        TaskDate::Task(t.clone()),
-                    );
-                    app.dispatch(IOEvent::UpdateTask(t)).await;
+            if !app.name_edit.text.is_empty()
+                && app.year_edit.text.parse::<i32>().is_ok()
+                && app.month_edit.text.parse::<u32>().is_ok()
+                && app.date_edit.text.parse::<u32>().is_ok()
+                && NaiveDate::from_ymd_opt(
+                    app.year_edit.text.parse::<i32>().unwrap(),
+                    app.month_edit.text.parse::<u32>().unwrap(),
+                    app.date_edit.text.parse::<u32>().unwrap(),
+                )
+                .is_some()
+            {
+                if let TaskDate::Task(t) = app.task_list.current_taskdate.clone() {
+                    let editing_task: &mut Task =
+                        &mut app.task_list.tasks[app.task_list.selected_index.unwrap()];
+                    *editing_task = Task {
+                        due_date: NaiveDate::from_ymd_opt(
+                            app.year_edit.text.parse::<i32>().unwrap(),
+                            app.month_edit.text.parse::<u32>().unwrap(),
+                            app.date_edit.text.parse::<u32>().unwrap(),
+                        )
+                        .unwrap(),
+                        name: app.name_edit.text.clone(),
+                        ..t
+                    };
+
+                    let io_event = IOEvent::UpdateTask(editing_task.clone());
+                    app.dispatch(io_event).await;
+                    app.disable_pop_up();
+                } else if let TaskDate::Date(_) = app.task_list.current_taskdate.clone() {
+                    let new_task = Task {
+                        due_date: NaiveDate::from_ymd_opt(
+                            app.year_edit.text.parse::<i32>().unwrap(),
+                            app.month_edit.text.parse::<u32>().unwrap(),
+                            app.date_edit.text.parse::<u32>().unwrap(),
+                        )
+                        .unwrap(),
+                        name: app.name_edit.text.clone(),
+                        completed: false,
+                        id: -1,
+                    };
+                    app.dispatch(IOEvent::CreateTask(new_task)).await;
                     app.disable_pop_up();
                 }
             }
@@ -85,10 +114,10 @@ pub async fn do_action(app: &mut App, key: Key) -> AppReturn {
 
 pub fn initialize(app: &mut App) -> AppReturn {
     let (name, year, month, date): (String, String, String, String);
-    match app.task_list[app.task_list_state.selected().unwrap()].clone() {
+    match &app.task_list.current_taskdate {
         TaskDate::Task(t) => {
             (name, year, month, date) = (
-                t.name,
+                t.name.clone(),
                 t.due_date.year().to_string(),
                 t.due_date.month().to_string(),
                 t.due_date.day().to_string(),
