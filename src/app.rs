@@ -96,9 +96,11 @@ impl App {
         if self.pop_up.is_none() {
             match key {
                 Key::Char('e') => {
-                    if let TaskDate::Task(_) = self.task_list.current_taskdate {
-                        self.editing_task = true;
-                        self.enable_pop_up(AppPopUp::TaskEditor);
+                    if let TaskDate::Task(t) = &self.task_list.current_taskdate {
+                        if !t.completed {
+                            self.editing_task = true;
+                            self.enable_pop_up(AppPopUp::TaskEditor);
+                        }
                     }
                     AppReturn::Continue
                 }

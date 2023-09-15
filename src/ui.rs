@@ -5,7 +5,7 @@ use crate::{
 use ratatui::{
     prelude::{Backend, Constraint, Direction, Layout, Rect},
     style::{Modifier, Style},
-    text::Span,
+    text::{Line, Span},
     widgets::{Block, Borders, Clear, List, ListItem, Padding, Paragraph},
     Frame,
 };
@@ -30,10 +30,17 @@ pub fn draw<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .get_upcoming_list(app.task_list_state.selected().unwrap_or(0), height)
         .iter()
         .map(|i| {
-            ListItem::new(Span::raw(match i {
-                TaskDate::Date(d) => d.to_string(),
-                TaskDate::Task(t) => format!(" {}", t.name),
-            }))
+            ListItem::new(match i {
+                TaskDate::Date(d) => Line::from(Span::raw(d.to_string())),
+                TaskDate::Task(t) => {
+                    let mut sections = vec![Span::raw(" "), Span::raw(t.name.clone())];
+                    if t.completed {
+                        sections[1].patch_style(Style::new().add_modifier(Modifier::CROSSED_OUT))
+                    }
+
+                    Line::from(sections)
+                }
+            })
         })
         .collect();
 
@@ -137,7 +144,7 @@ fn draw_task_editor<B: Backend>(f: &mut Frame<B>, app: &mut App) {
             TaskDate::Task(t) => t.due_date.to_string(),
             TaskDate::Date(d) => d.to_string(),
         })
-        .block(Block::new().borders(Borders::ALL));
+        .block(Block::new().title("Due").borders(Borders::ALL));
         f.render_widget(old_date, date_blocks[0]);
 
         let arrow = Paragraph::new("->").block(Block::new().padding(Padding::uniform(1)));
