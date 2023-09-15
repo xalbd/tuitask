@@ -1,7 +1,11 @@
 mod task_editor;
 mod upcoming;
 
-use crate::{database::IOEvent, key::Key, task::TaskList};
+use crate::{
+    database::IOEvent,
+    key::Key,
+    task::{TaskDate, TaskList},
+};
 use ratatui::widgets::ListState;
 
 #[derive(Clone)]
@@ -48,7 +52,7 @@ pub struct App {
     pub year_edit: TextBox,
     pub month_edit: TextBox,
     pub date_edit: TextBox,
-    pub editing: bool,
+    pub editing_task: bool,
 
     pub status_text: String,
     pub keybind_hints: String,
@@ -70,11 +74,11 @@ impl App {
             mode: AppMode::Upcoming,
             pop_up: None,
             task_edit_field: SelectedField::Name,
-            name_edit: TextBox::new(36),
+            name_edit: TextBox::new(36), // TODO: need to be changed to constants
             year_edit: TextBox::new(4),
             month_edit: TextBox::new(2),
             date_edit: TextBox::new(2),
-            editing: false,
+            editing_task: false,
             status_text: "".to_string(),
             keybind_hints: "".to_string(),
             task_list: TaskList::new(),
@@ -91,7 +95,15 @@ impl App {
     pub async fn do_action(&mut self, key: Key) -> AppReturn {
         if self.pop_up.is_none() {
             match key {
-                Key::Char('i') => {
+                Key::Char('e') => {
+                    if let TaskDate::Task(_) = self.task_list.current_taskdate {
+                        self.editing_task = true;
+                        self.enable_pop_up(AppPopUp::TaskEditor);
+                    }
+                    AppReturn::Continue
+                }
+                Key::Char('a') => {
+                    self.editing_task = false;
                     self.enable_pop_up(AppPopUp::TaskEditor);
                     AppReturn::Continue
                 }

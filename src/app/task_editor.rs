@@ -63,8 +63,8 @@ pub async fn do_action(app: &mut App, key: Key) -> AppReturn {
                 )
                 .is_some()
             {
-                if let TaskDate::Task(t) = app.task_list.current_taskdate.clone() {
-                    let editing_task: &mut Task =
+                if app.editing_task {
+                    let editing_task =
                         &mut app.task_list.tasks[app.task_list.selected_index.unwrap()];
                     *editing_task = Task {
                         due_date: NaiveDate::from_ymd_opt(
@@ -74,13 +74,13 @@ pub async fn do_action(app: &mut App, key: Key) -> AppReturn {
                         )
                         .unwrap(),
                         name: app.name_edit.text.clone(),
-                        ..t
+                        ..*editing_task
                     };
 
                     let io_event = IOEvent::UpdateTask(editing_task.clone());
                     app.dispatch(io_event).await;
                     app.disable_pop_up();
-                } else if let TaskDate::Date(_) = app.task_list.current_taskdate.clone() {
+                } else {
                     let new_task = Task {
                         due_date: NaiveDate::from_ymd_opt(
                             app.year_edit.text.parse::<i32>().unwrap(),
@@ -117,7 +117,11 @@ pub fn initialize(app: &mut App) -> AppReturn {
     match &app.task_list.current_taskdate {
         TaskDate::Task(t) => {
             (name, year, month, date) = (
-                t.name.clone(),
+                if app.editing_task {
+                    t.name.clone()
+                } else {
+                    "".to_string()
+                },
                 t.due_date.year().to_string(),
                 t.due_date.month().to_string(),
                 t.due_date.day().to_string(),

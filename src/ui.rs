@@ -67,7 +67,7 @@ pub fn draw<B: Backend>(f: &mut Frame<B>, app: &mut App) {
 }
 
 fn draw_task_editor<B: Backend>(f: &mut Frame<B>, app: &mut App) {
-    let task_editor_width = 40;
+    let task_editor_width = 40; // TODO: need to be changed to constants
     let task_editor_height = 9;
 
     let frame_size = f.size();
@@ -85,11 +85,17 @@ fn draw_task_editor<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .split(editor_area);
 
     f.render_widget(
-        Block::new().title("Edit Task").borders(Borders::ALL),
+        Block::new()
+            .title(if app.editing_task {
+                "Edit Task"
+            } else {
+                "Add Task"
+            })
+            .borders(Borders::ALL),
         hint_layout[0],
     );
 
-    let hint = Paragraph::new("Scroll[Tab]  Submit[Shift-Enter]");
+    let hint = Paragraph::new("Scroll[Tab]  Submit[Enter]");
     f.render_widget(hint, hint_layout[1]);
 
     let vertical_layout = Layout::default()

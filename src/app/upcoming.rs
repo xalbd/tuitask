@@ -6,26 +6,21 @@ use crate::{
 pub async fn do_action(app: &mut App, key: Key) -> AppReturn {
     match key {
         Key::Char('j') | Key::Down => {
-            let i = match app.task_list_state.selected() {
-                Some(i) => i + 1,
-                None => 0,
-            };
-            app.task_list_state.select(Some(i));
+            app.task_list_state
+                .select(Some(match app.task_list_state.selected() {
+                    Some(i) => i + 1,
+                    None => 0,
+                }));
         }
         Key::Char('k') | Key::Up => {
-            let i = match app.task_list_state.selected() {
-                Some(i) => {
-                    if i > 0 {
-                        i - 1
-                    } else {
-                        i
-                    }
-                }
-                None => 0,
-            };
-            app.task_list_state.select(Some(i));
+            app.task_list_state.select(Some(
+                app.task_list_state
+                    .selected()
+                    .unwrap_or(0)
+                    .saturating_sub(1),
+            ));
         }
-        Key::Char('a') => {
+        Key::Char('r') => {
             app.task_list_state.select(Some(0));
         }
         Key::Char('q') | Key::Esc | Key::Ctrl('c') => return AppReturn::Quit,
@@ -35,5 +30,5 @@ pub async fn do_action(app: &mut App, key: Key) -> AppReturn {
 }
 
 pub fn initialize(app: &mut App) {
-    app.keybind_hints = "Scroll[j/k]  Reset[a]  Edit[i]  Quit[q/esc/ctrl-c]".to_string();
+    app.keybind_hints = "Scroll[j/k]  [R]eset  [E]dit  [A]dd  [Q]uit[esc/ctrl-c]".to_string();
 }
