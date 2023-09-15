@@ -6,21 +6,18 @@ use ratatui::{
     prelude::{Backend, Constraint, Direction, Layout, Rect},
     style::{Modifier, Style},
     text::Span,
-    widgets::{Block, Borders, Clear, List, ListItem, Paragraph},
+    widgets::{Block, Borders, Clear, List, ListItem, Padding, Paragraph},
     Frame,
 };
 
 pub fn draw<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
-        .constraints(
-            [
-                Constraint::Length(1),
-                Constraint::Max(100),
-                Constraint::Length(1),
-            ]
-            .as_ref(),
-        )
+        .constraints([
+            Constraint::Length(1),
+            Constraint::Max(100),
+            Constraint::Length(1),
+        ])
         .split(f.size());
 
     let title = Paragraph::new("Upcoming".to_string());
@@ -81,15 +78,19 @@ fn draw_task_editor<B: Backend>(f: &mut Frame<B>, app: &mut App) {
 
     let hint_layout = Layout::default()
         .direction(Direction::Vertical)
-        .constraints(vec![Constraint::Percentage(90), Constraint::Min(1)])
+        .constraints(vec![Constraint::Min(8), Constraint::Min(1)])
         .split(editor_area);
 
     f.render_widget(
         Block::new()
             .title(if app.editing_task {
-                "Edit Task"
+                if let TaskDate::Task(t) = &app.task_list.current_taskdate {
+                    format!("Edit \"{}\"", t.name) // TODO: overflow behavior
+                } else {
+                    "Edit Task".to_string()
+                }
             } else {
-                "Add Task"
+                "Add Task".to_string()
             })
             .borders(Borders::ALL),
         hint_layout[0],
@@ -108,6 +109,15 @@ fn draw_task_editor<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .block(Block::new().title("Name").borders(Borders::ALL));
     f.render_widget(textarea, vertical_layout[0]);
 
+    let date_blocks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints(vec![
+            Constraint::Max(12),
+            Constraint::Max(4),
+            Constraint::Min(0),
+        ])
+        .split(vertical_layout[1]);
+
     let date_layout = Layout::default()
         .direction(Direction::Horizontal)
         .constraints(vec![
@@ -116,7 +126,23 @@ fn draw_task_editor<B: Backend>(f: &mut Frame<B>, app: &mut App) {
             Constraint::Max(4),
             Constraint::Min(0),
         ])
-        .split(vertical_layout[1]);
+        .split(if app.editing_task {
+            date_blocks[2]
+        } else {
+            vertical_layout[1]
+        });
+
+    if app.editing_task {
+        let old_date = Paragraph::new(match &app.task_list.current_taskdate {
+            TaskDate::Task(t) => t.due_date.to_string(),
+            TaskDate::Date(d) => d.to_string(),
+        })
+        .block(Block::new().borders(Borders::ALL));
+        f.render_widget(old_date, date_blocks[0]);
+
+        let arrow = Paragraph::new("->").block(Block::new().padding(Padding::uniform(1)));
+        f.render_widget(arrow, date_blocks[1]);
+    }
 
     let year = Paragraph::new(app.year_edit.text.clone())
         .block(Block::new().title("Y").borders(Borders::ALL));

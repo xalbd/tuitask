@@ -158,6 +158,7 @@ pub fn initialize(app: &mut App) -> AppReturn {
         ..app.date_edit
     };
     app.keybind_hints = "Exit[esc/ctrl-c]".to_string();
+    app.task_edit_field = SelectedField::Name;
 
     AppReturn::Continue
 }
