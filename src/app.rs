@@ -20,6 +20,15 @@ pub struct TextBox {
     pub max_length: usize,
 }
 
+impl TextBox {
+    fn new(max_length: usize) -> Self {
+        TextBox {
+            max_length,
+            ..Default::default()
+        }
+    }
+}
+
 #[derive(PartialEq)]
 pub enum SelectedField {
     Name,
@@ -39,6 +48,7 @@ pub struct App {
     pub year_edit: TextBox,
     pub month_edit: TextBox,
     pub date_edit: TextBox,
+    pub editing: bool,
 
     pub status_text: String,
     pub keybind_hints: String,
@@ -59,23 +69,12 @@ impl App {
             io_tx,
             mode: AppMode::Upcoming,
             pop_up: None,
-            name_edit: TextBox {
-                max_length: 36,
-                ..Default::default()
-            },
-            year_edit: TextBox {
-                max_length: 4,
-                ..Default::default()
-            },
-            month_edit: TextBox {
-                max_length: 2,
-                ..Default::default()
-            },
-            date_edit: TextBox {
-                max_length: 2,
-                ..Default::default()
-            },
             task_edit_field: SelectedField::Name,
+            name_edit: TextBox::new(36),
+            year_edit: TextBox::new(4),
+            month_edit: TextBox::new(2),
+            date_edit: TextBox::new(2),
+            editing: false,
             status_text: "".to_string(),
             keybind_hints: "".to_string(),
             task_list: TaskList::new(),
