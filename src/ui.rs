@@ -4,9 +4,9 @@ use crate::{
 };
 use ratatui::{
     prelude::{Backend, Constraint, Direction, Layout, Rect},
-    style::{Color, Modifier, Style},
+    style::{Modifier, Style},
     text::Span,
-    widgets::{Block, BorderType, Borders, Clear, List, ListItem, Paragraph, Wrap},
+    widgets::{Block, Borders, Clear, List, ListItem, Paragraph},
     Frame,
 };
 
@@ -23,9 +23,7 @@ pub fn draw<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         )
         .split(f.size());
 
-    let title = Paragraph::new("Upcoming".to_string())
-        .style(Style::default().fg(Color::LightCyan))
-        .block(Block::default().style(Style::default().fg(Color::White)));
+    let title = Paragraph::new("Upcoming".to_string());
     f.render_widget(title, chunks[0]);
 
     let height = chunks[1].height as usize;
@@ -43,12 +41,7 @@ pub fn draw<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .collect();
 
     let list = List::new(list_items)
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .border_type(BorderType::Plain),
-        )
-        .style(Style::default().fg(Color::White))
+        .block(Block::default().borders(Borders::ALL))
         .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
         .highlight_symbol(">");
     f.render_stateful_widget(list, chunks[1], &mut app.task_list_state);
@@ -58,8 +51,7 @@ pub fn draw<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .constraints(vec![Constraint::Percentage(75), Constraint::Percentage(25)])
         .split(chunks[2]);
 
-    let hint_text = Paragraph::new(app.keybind_hints.clone())
-        .block(Block::default().style(Style::default().fg(Color::White)));
+    let hint_text = Paragraph::new(app.keybind_hints.clone());
     f.render_widget(hint_text, footer_layout[0]);
 
     let status_text = Paragraph::new(app.status_text.to_string());
@@ -107,10 +99,7 @@ fn draw_task_editor<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .split(hint_layout[0]);
 
     let textarea = Paragraph::new(app.name_edit.text.clone())
-        .block(Block::new().title("Name").borders(Borders::ALL))
-        .style(Style::default())
-        .wrap(Wrap { trim: true });
-
+        .block(Block::new().title("Name").borders(Borders::ALL));
     f.render_widget(textarea, vertical_layout[0]);
 
     let date_layout = Layout::default()
