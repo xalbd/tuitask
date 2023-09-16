@@ -5,7 +5,7 @@ use crate::{
 use ratatui::{
     prelude::{Backend, Constraint, Direction, Layout, Rect},
     style::{Modifier, Style},
-    text::{Line, Span},
+    text::{Line, Span, Text},
     widgets::{Block, Borders, Clear, List, ListItem, Padding, Paragraph},
     Frame,
 };
@@ -25,20 +25,38 @@ pub fn draw<B: Backend>(f: &mut Frame<B>, app: &mut App) {
 
     let height = chunks[1].height as usize;
 
+    let mut dates_seen = -1;
     let list_items: Vec<ListItem> = app
         .task_list
         .get_upcoming_list(app.task_list_state.selected().unwrap_or(0), height)
         .iter()
         .map(|i| {
             ListItem::new(match i {
-                TaskDate::Date(d) => Line::from(Span::raw(d.to_string())),
+                TaskDate::Date(d) => {
+                    dates_seen += 1;
+                    Text::from(vec![
+                        Line::from(""),
+                        Line::from(Span::styled(
+                            format!(
+                                "{} ({})",
+                                d.format("%b %d - %a"),
+                                if dates_seen == 0 {
+                                    "Today".to_string()
+                                } else {
+                                    format!("+{}", dates_seen)
+                                }
+                            ),
+                            Style::new().add_modifier(Modifier::BOLD),
+                        )),
+                    ])
+                }
                 TaskDate::Task(t) => {
-                    let mut sections = vec![Span::raw(" "), Span::raw(t.name.clone())];
+                    let mut sections = vec![Span::raw(""), Span::raw(t.name.clone())];
                     if t.completed {
                         sections[1].patch_style(Style::new().add_modifier(Modifier::CROSSED_OUT))
                     }
 
-                    Line::from(sections)
+                    Text::from(Line::from(sections))
                 }
             })
         })
@@ -119,7 +137,7 @@ fn draw_task_editor<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     let date_blocks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints(vec![
-            Constraint::Max(12),
+            Constraint::Max(18),
             Constraint::Max(4),
             Constraint::Min(0),
         ])
@@ -141,7 +159,7 @@ fn draw_task_editor<B: Backend>(f: &mut Frame<B>, app: &mut App) {
 
     if app.editing_task {
         let old_date = Paragraph::new(match &app.task_list.current_taskdate {
-            TaskDate::Task(t) => t.due_date.to_string(),
+            TaskDate::Task(t) => t.due_date.format("%F (%a)").to_string(),
             TaskDate::Date(d) => d.to_string(),
         })
         .block(Block::new().title("Due").borders(Borders::ALL));
