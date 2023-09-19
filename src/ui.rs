@@ -2,6 +2,7 @@ use crate::{
     app::{App, AppPopUp, SelectedField},
     task::TaskDate,
 };
+use chrono::{Local, NaiveDate};
 use ratatui::{
     prelude::{Backend, Constraint, Direction, Layout, Rect},
     style::{Modifier, Style},
@@ -29,13 +30,13 @@ pub fn draw<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     let list_items: Vec<ListItem> = app
         .task_list
         .get_upcoming_list(app.task_list_state.selected().unwrap_or(0), height)
-        .iter()
+        .windows(2)
         .map(|i| {
-            ListItem::new(match i {
-                TaskDate::Date(d) => {
-                    dates_seen += 1;
-                    Text::from(vec![
-                        Line::from(""),
+            // TODO: improve scrolling behavior
+            ListItem::new({
+                let mut content = vec![match &i[0] {
+                    TaskDate::Date(d) => {
+                        dates_seen += 1;
                         Line::from(Span::styled(
                             format!(
                                 "{} ({})",
@@ -47,17 +48,23 @@ pub fn draw<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                                 }
                             ),
                             Style::new().add_modifier(Modifier::BOLD),
-                        )),
-                    ])
-                }
-                TaskDate::Task(t) => {
-                    let mut sections = vec![Span::raw(""), Span::raw(t.name.clone())];
-                    if t.completed {
-                        sections[1].patch_style(Style::new().add_modifier(Modifier::CROSSED_OUT))
+                        ))
                     }
+                    TaskDate::Task(t) => Line::from(Span::styled(
+                        t.name.clone(),
+                        Style::new().add_modifier(if t.completed {
+                            Modifier::CROSSED_OUT
+                        } else {
+                            Modifier::empty()
+                        }),
+                    )),
+                }];
 
-                    Text::from(Line::from(sections))
+                if let TaskDate::Date(..) = i[1] {
+                    content.push(Line::from(""));
                 }
+
+                Text::from(content)
             })
         })
         .collect();
@@ -89,7 +96,8 @@ pub fn draw<B: Backend>(f: &mut Frame<B>, app: &mut App) {
 }
 
 fn draw_task_editor<B: Backend>(f: &mut Frame<B>, app: &mut App) {
-    let task_editor_width = 40; // TODO: need to be changed to constants
+    // NOTE: calculate required lengths BEFORE rendering
+    let task_editor_width = 50; // TODO: need to be changed to minimums instead of constants
     let task_editor_height = 9;
 
     let frame_size = f.size();
@@ -180,6 +188,29 @@ fn draw_task_editor<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     let day = Paragraph::new(app.date_edit.text.clone())
         .block(Block::new().title("D").borders(Borders::ALL));
     f.render_widget(day, date_layout[2]);
+
+    let weekday = Paragraph::new(
+        if let Some(parsed_date) = NaiveDate::from_ymd_opt(
+            app.year_edit.text.parse::<i32>().unwrap_or(i32::MAX),
+            app.month_edit.text.parse::<u32>().unwrap_or(0),
+            app.date_edit.text.parse::<u32>().unwrap_or(0),
+        ) {
+            format!("{} ({})", parsed_date.format("%a"), {
+                let offset = parsed_date
+                    .signed_duration_since(Local::now().date_naive()) // TODO: overflow and logic is super messy
+                    .num_days();
+                if offset == 0 {
+                    "Today".to_string()
+                } else {
+                    format!("{:+}", offset)
+                }
+            })
+        } else {
+            "DATE INVALID".to_string()
+        },
+    )
+    .block(Block::new().title("W").borders(Borders::ALL));
+    f.render_widget(weekday, date_layout[3]);
 
     let (active_area, active_index) = match app.task_edit_field {
         SelectedField::Name => (vertical_layout[0], app.name_edit.index),
