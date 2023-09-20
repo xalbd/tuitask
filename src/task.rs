@@ -18,7 +18,7 @@ pub enum TaskDate {
 pub struct TaskList {
     pub tasks: Vec<Task>,
     pub current_taskdate: TaskDate, // updates when UI renders task list in some format
-    pub selected_index: Option<usize>, // same as above, facilities editing/removing currently selected task
+    pub selected_index: usize, // same as above, facilities editing/removing currently selected task
 }
 
 impl TaskList {
@@ -26,7 +26,7 @@ impl TaskList {
         TaskList {
             tasks: Vec::new(),
             current_taskdate: TaskDate::Date(NaiveDate::from_ymd_opt(1, 1, 1).unwrap()),
-            selected_index: None,
+            selected_index: 0,
         }
     }
 
@@ -41,7 +41,7 @@ impl TaskList {
             let new_item: TaskDate;
             if current_task < self.tasks.len() && self.tasks[current_task].due_date < current_date {
                 if output.len() == selected {
-                    self.selected_index = Some(current_task);
+                    self.selected_index = current_task;
                 }
                 new_item = TaskDate::Task(self.tasks[current_task].clone());
                 current_task += 1;

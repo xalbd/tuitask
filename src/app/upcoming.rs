@@ -27,7 +27,7 @@ pub async fn do_action(app: &mut App, key: Key) -> AppReturn {
         }
         Key::Enter => {
             if let TaskDate::Task(_) = app.task_list.current_taskdate {
-                let editing_task = &mut app.task_list.tasks[app.task_list.selected_index.unwrap()];
+                let editing_task = &mut app.task_list.tasks[app.task_list.selected_index];
                 editing_task.completed = !editing_task.completed;
 
                 let io_event = IOEvent::UpdateTask(editing_task.clone());

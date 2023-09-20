@@ -64,8 +64,7 @@ pub async fn do_action(app: &mut App, key: Key) -> AppReturn {
                 .is_some()
             {
                 if app.editing_task {
-                    let editing_task =
-                        &mut app.task_list.tasks[app.task_list.selected_index.unwrap()];
+                    let editing_task = &mut app.task_list.tasks[app.task_list.selected_index];
                     *editing_task = Task {
                         due_date: NaiveDate::from_ymd_opt(
                             app.year_edit.text.parse::<i32>().unwrap(),
