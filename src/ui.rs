@@ -1,13 +1,14 @@
 use crate::{
-    app::{App, AppPopUp, SelectedField},
+    app::{App, AppMode, AppPopUp, SelectedField},
     task::TaskDate,
 };
 use chrono::{Local, NaiveDate};
 use ratatui::{
     prelude::{Backend, Constraint, Direction, Layout, Rect},
-    style::{Modifier, Style},
+    style::{Modifier, Style, Stylize},
+    symbols::DOT,
     text::{Line, Span, Text},
-    widgets::{Block, Borders, Clear, List, ListItem, Padding, Paragraph},
+    widgets::{Block, Borders, Clear, List, ListItem, Padding, Paragraph, Tabs},
     Frame,
 };
 
@@ -21,11 +22,38 @@ pub fn draw<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         ])
         .split(f.size());
 
-    let title = Paragraph::new("Upcoming".to_string());
-    f.render_widget(title, chunks[0]);
+    let tabs = Tabs::new(
+        ["Upcoming (1)", "Categories (2)"]
+            .iter()
+            .cloned()
+            .map(Line::from)
+            .collect(),
+    )
+    .divider(DOT)
+    .highlight_style(Style::new().bold().italic())
+    .select(if app.mode == AppMode::Upcoming { 0 } else { 1 });
+    f.render_widget(tabs, chunks[0]);
 
-    let task_display_height = chunks[1].height as usize;
-    let task_display_width = chunks[1].width as usize;
+    let footer_layout = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints(vec![Constraint::Percentage(75), Constraint::Percentage(25)])
+        .split(chunks[2]);
+
+    let hint_text = Paragraph::new(app.keybind_hints.clone());
+    f.render_widget(hint_text, footer_layout[0]);
+
+    let status_text = Paragraph::new(app.status_text.to_string());
+    f.render_widget(status_text, footer_layout[1]);
+
+    match &app.mode {
+        AppMode::Upcoming => draw_upcoming(f, chunks[1], app),
+        AppMode::Categories => draw_categories(f, chunks[1], app),
+    }
+}
+
+fn draw_upcoming<B: Backend>(f: &mut Frame<B>, r: Rect, app: &mut App) {
+    let task_display_height = r.height as usize;
+    let task_display_width = r.width as usize;
 
     let mut dates_seen = -1;
     let list_items: Vec<ListItem> = app
@@ -51,7 +79,7 @@ pub fn draw<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                                     format!("+{}", dates_seen)
                                 }
                             ),
-                            Style::new().add_modifier(Modifier::BOLD),
+                            Style::new().bold(),
                         ))
                     }
                     TaskDate::Task(t) => Line::from(Span::styled(
@@ -80,20 +108,9 @@ pub fn draw<B: Backend>(f: &mut Frame<B>, app: &mut App) {
 
     let list = List::new(list_items)
         .block(Block::default().borders(Borders::ALL))
-        .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
+        .highlight_style(Style::new().italic())
         .highlight_symbol(">");
-    f.render_stateful_widget(list, chunks[1], &mut app.task_list_state);
-
-    let footer_layout = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints(vec![Constraint::Percentage(75), Constraint::Percentage(25)])
-        .split(chunks[2]);
-
-    let hint_text = Paragraph::new(app.keybind_hints.clone());
-    f.render_widget(hint_text, footer_layout[0]);
-
-    let status_text = Paragraph::new(app.status_text.to_string());
-    f.render_widget(status_text, footer_layout[1]);
+    f.render_stateful_widget(list, r, &mut app.task_list_state);
 
     if app.pop_up.is_some() {
         match app.pop_up.as_ref().unwrap() {
@@ -103,6 +120,8 @@ pub fn draw<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         }
     }
 }
+
+fn draw_categories<B: Backend>(f: &mut Frame<B>, r: Rect, app: &mut App) {}
 
 fn draw_task_editor<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     // NOTE: calculate required lengths BEFORE rendering

@@ -1,3 +1,4 @@
+mod categories;
 mod task_editor;
 mod upcoming;
 
@@ -8,9 +9,10 @@ use crate::{
 };
 use ratatui::widgets::ListState;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub enum AppMode {
     Upcoming,
+    Categories,
 }
 
 pub enum AppPopUp {
@@ -74,7 +76,7 @@ impl App {
             mode: AppMode::Upcoming,
             pop_up: None,
             task_edit_field: SelectedField::Name,
-            name_edit: TextBox::new(36), // TODO: need to be changed to constants
+            name_edit: TextBox::new(36), // TODO: can this be infinite/higher?
             year_edit: TextBox::new(4),
             month_edit: TextBox::new(2),
             date_edit: TextBox::new(2),
@@ -95,22 +97,27 @@ impl App {
     pub async fn do_action(&mut self, key: Key) -> AppReturn {
         if self.pop_up.is_none() {
             match key {
-                Key::Char('e') => {
-                    if let TaskDate::Task(t) = &self.task_list.current_taskdate {
-                        if !t.completed {
-                            self.editing_task = true;
-                            self.enable_pop_up(AppPopUp::TaskEditor);
-                        }
-                    }
-                    AppReturn::Continue
-                }
-                Key::Char('a') => {
-                    self.editing_task = false;
-                    self.enable_pop_up(AppPopUp::TaskEditor);
-                    AppReturn::Continue
-                }
+                Key::Number('1') => self.switch_mode(AppMode::Upcoming),
+                Key::Number('2') => self.switch_mode(AppMode::Categories),
                 _ => match self.mode {
-                    AppMode::Upcoming => upcoming::do_action(self, key).await,
+                    AppMode::Upcoming => match key {
+                        Key::Char('e') => {
+                            if let TaskDate::Task(t) = &self.task_list.current_taskdate {
+                                if !t.completed {
+                                    self.editing_task = true;
+                                    self.enable_pop_up(AppPopUp::TaskEditor);
+                                }
+                            }
+                            AppReturn::Continue
+                        }
+                        Key::Char('a') => {
+                            self.editing_task = false;
+                            self.enable_pop_up(AppPopUp::TaskEditor);
+                            AppReturn::Continue
+                        }
+                        _ => upcoming::do_action(self, key).await,
+                    },
+                    AppMode::Categories => categories::do_action(self, key).await,
                 },
             }
         } else {
@@ -121,14 +128,18 @@ impl App {
         }
     }
 
-    fn switch_mode(&mut self, mode: AppMode) {
+    fn switch_mode(&mut self, mode: AppMode) -> AppReturn {
         match mode {
             AppMode::Upcoming => {
                 upcoming::initialize(self);
             }
+            AppMode::Categories => {
+                categories::initialize(self);
+            }
         }
 
         self.mode = mode;
+        AppReturn::Continue
     }
 
     fn enable_pop_up(&mut self, pop_up: AppPopUp) {
