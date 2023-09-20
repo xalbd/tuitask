@@ -24,12 +24,16 @@ pub fn draw<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     let title = Paragraph::new("Upcoming".to_string());
     f.render_widget(title, chunks[0]);
 
-    let height = chunks[1].height as usize;
+    let task_display_height = chunks[1].height as usize;
+    let task_display_width = chunks[1].width as usize;
 
     let mut dates_seen = -1;
     let list_items: Vec<ListItem> = app
         .task_list
-        .get_upcoming_list(app.task_list_state.selected().unwrap_or(0), height)
+        .get_upcoming_list(
+            app.task_list_state.selected().unwrap_or(0),
+            task_display_height,
+        )
         .windows(2)
         .map(|i| {
             // TODO: improve scrolling behavior
@@ -51,7 +55,12 @@ pub fn draw<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                         ))
                     }
                     TaskDate::Task(t) => Line::from(Span::styled(
-                        t.name.clone(),
+                        format!(
+                            "{:-<width$}{}",
+                            t.name.clone(),
+                            t.category_name.clone(),
+                            width = task_display_width - t.category_name.len() - 3
+                        ),
                         Style::new().add_modifier(if t.completed {
                             Modifier::CROSSED_OUT
                         } else {

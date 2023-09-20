@@ -43,6 +43,7 @@ impl IOHandler {
                 name: r.get("name"),
                 due_date: r.get("due_date"),
                 completed: r.get("completed"),
+                category_name: r.get("category_name"),
             })
             .collect();
 
@@ -74,11 +75,11 @@ impl IOHandler {
         self.update_status("creating task".to_string()).await;
 
         let created_task_id = sqlx::query(
-            "INSERT INTO task (name, due_date, completed) VALUES ($1, $2, $3) RETURNING id",
+            "INSERT INTO task (name, due_date, category_name) VALUES ($1, $2, $3) RETURNING id",
         )
         .bind(t.name.clone())
         .bind(t.due_date)
-        .bind(t.completed)
+        .bind(t.category_name.clone())
         .fetch_one(&self.db_pool)
         .await?;
 

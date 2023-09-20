@@ -6,6 +6,7 @@ pub struct Task {
     pub name: String,
     pub completed: bool,
     pub id: i32,
+    pub category_name: String,
 }
 
 #[derive(Clone, PartialEq)]

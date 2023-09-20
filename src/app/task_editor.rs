@@ -74,7 +74,7 @@ pub async fn do_action(app: &mut App, key: Key) -> AppReturn {
                         )
                         .unwrap(),
                         name: app.name_edit.text.clone(),
-                        ..*editing_task
+                        ..editing_task.clone()
                     };
 
                     let io_event = IOEvent::UpdateTask(editing_task.clone());
@@ -90,6 +90,7 @@ pub async fn do_action(app: &mut App, key: Key) -> AppReturn {
                         .unwrap(),
                         name: app.name_edit.text.clone(),
                         completed: false,
+                        category_name: "Default Category".to_string(),
                         id: -1,
                     };
                     app.dispatch(IOEvent::CreateTask(new_task)).await;
