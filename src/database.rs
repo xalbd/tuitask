@@ -3,7 +3,7 @@ use sqlx::Row;
 use std::sync::Arc;
 
 pub enum IOEvent {
-    LoadTasks,
+    LoadData,
     UpdateTask(Task),
     CreateTask(Task),
 }
@@ -20,7 +20,7 @@ impl IOHandler {
 
     pub async fn handle_io(&mut self, io_event: IOEvent) -> Result<(), Box<dyn std::error::Error>> {
         match io_event {
-            IOEvent::LoadTasks => self.load_tasks().await?,
+            IOEvent::LoadData => self.load_data().await?,
             IOEvent::UpdateTask(t) => self.update_task(t).await?,
             IOEvent::CreateTask(t) => self.create_task(t).await?,
         };
@@ -29,28 +29,37 @@ impl IOHandler {
     }
 
     // Loads all incomplete tasks to task list
-    async fn load_tasks(&mut self) -> Result<(), sqlx::Error> {
-        self.update_status("loading tasks".to_string()).await;
+    async fn load_data(&mut self) -> Result<(), sqlx::Error> {
+        self.update_status("loading data".to_string()).await;
 
-        let rows = sqlx::query("SELECT * FROM task WHERE completed = FALSE")
+        let category_rows = sqlx::query("SELECT * FROM category")
             .fetch_all(&self.db_pool)
             .await?;
 
-        let task_list: Vec<Task> = rows
+        let categories = category_rows
+            .iter()
+            .map(|r| (r.get("id"), r.get("name")))
+            .collect();
+
+        let task_rows = sqlx::query("SELECT * FROM task WHERE completed = FALSE")
+            .fetch_all(&self.db_pool)
+            .await?;
+
+        let task_list: Vec<Task> = task_rows
             .iter()
             .map(|r| Task {
                 id: r.get("id"),
                 name: r.get("name"),
                 due_date: r.get("due_date"),
                 completed: r.get("completed"),
-                category_name: r.get("category_name"),
+                category_id: r.get("category_id"),
             })
             .collect();
 
         let mut app = self.app.lock().await;
         app.task_list.tasks = task_list;
-        app.task_list_state.select(Some(0));
-        app.status_text = "tasks loaded".to_string();
+        app.categories = categories;
+        app.status_text = "data loaded".to_string();
 
         Ok(())
     }
@@ -58,10 +67,9 @@ impl IOHandler {
     async fn update_task(&mut self, t: Task) -> Result<(), sqlx::Error> {
         self.update_status("updating task".to_string()).await;
 
-        sqlx::query("UPDATE task SET name = $1, due_date = $2, completed = $3 WHERE id = $4")
+        sqlx::query("UPDATE task SET name = $1, due_date = $2 WHERE id = $4")
             .bind(t.name)
             .bind(t.due_date)
-            .bind(t.completed)
             .bind(t.id)
             .execute(&self.db_pool)
             .await?;
@@ -75,11 +83,11 @@ impl IOHandler {
         self.update_status("creating task".to_string()).await;
 
         let created_task_id = sqlx::query(
-            "INSERT INTO task (name, due_date, category_name) VALUES ($1, $2, $3) RETURNING id",
+            "INSERT INTO task (name, due_date, category_id) VALUES ($1, $2, $3) RETURNING id",
         )
         .bind(t.name.clone())
         .bind(t.due_date)
-        .bind(t.category_name.clone())
+        .bind(t.category_id.clone())
         .fetch_one(&self.db_pool)
         .await?;
 

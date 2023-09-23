@@ -1,6 +1,6 @@
 use crate::{
     app::{App, AppMode, AppPopUp, SelectedField},
-    task::TaskDate,
+    task::{Task, TaskDate},
 };
 use chrono::{Local, NaiveDate};
 use ratatui::{
@@ -86,8 +86,10 @@ fn draw_upcoming<B: Backend>(f: &mut Frame<B>, r: Rect, app: &mut App) {
                         format!(
                             "{:-<width$}{}",
                             t.name.clone(),
-                            t.category_name.clone(),
-                            width = task_display_width - t.category_name.len() - 3
+                            app.categories.get(&t.category_id).unwrap(),
+                            width = task_display_width
+                                - app.categories.get(&t.category_id).unwrap().len()
+                                - 3
                         ),
                         Style::new().add_modifier(if t.completed {
                             Modifier::CROSSED_OUT
@@ -121,7 +123,44 @@ fn draw_upcoming<B: Backend>(f: &mut Frame<B>, r: Rect, app: &mut App) {
     }
 }
 
-fn draw_categories<B: Backend>(f: &mut Frame<B>, r: Rect, app: &mut App) {}
+fn draw_categories<B: Backend>(f: &mut Frame<B>, r: Rect, app: &mut App) {
+    let blocks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(35), Constraint::Percentage(65)])
+        .split(r);
+
+    let mut categories: Vec<(&String, &i32)> = app.categories.iter().map(|c| (c.1, c.0)).collect();
+    categories.sort();
+
+    let categories_listitems: Vec<ListItem> = categories
+        .iter()
+        .map(|&i| ListItem::new(Text::from(i.0.clone())))
+        .collect();
+
+    let categories_list = List::new(categories_listitems)
+        .block(Block::new().borders(Borders::ALL))
+        .highlight_style(Style::new().italic())
+        .highlight_symbol(">");
+    f.render_stateful_widget(categories_list, blocks[0], &mut app.category_list_state);
+
+    let current_category_tasks: Vec<&Task> = app
+        .task_list
+        .tasks
+        .iter()
+        .filter(|t| &t.category_id == categories[app.category_list_state.selected().unwrap()].1)
+        .collect();
+
+    let current_category_listitems: Vec<ListItem> = current_category_tasks
+        .iter()
+        .map(|t| ListItem::new(Text::from(t.name.clone())))
+        .collect();
+
+    let current_category_list = List::new(current_category_listitems)
+        .block(Block::new().borders(Borders::ALL))
+        .highlight_style(Style::new().italic())
+        .highlight_symbol(">");
+    f.render_widget(current_category_list, blocks[1]);
+}
 
 fn draw_task_editor<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     // NOTE: calculate required lengths BEFORE rendering

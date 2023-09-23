@@ -52,6 +52,7 @@ pub async fn do_action(app: &mut App, key: Key) -> AppReturn {
             }
         }
         Key::Enter => {
+            // TODO: needs to automatically select the new/edited task in the list
             if !app.name_edit.text.is_empty()
                 && app.year_edit.text.parse::<i32>().is_ok()
                 && app.month_edit.text.parse::<u32>().is_ok()
@@ -89,7 +90,7 @@ pub async fn do_action(app: &mut App, key: Key) -> AppReturn {
                         .unwrap(),
                         name: app.name_edit.text.clone(),
                         completed: false,
-                        category_name: "Default Category".to_string(),
+                        category_id: 1,
                         id: -1,
                     };
                     app.dispatch(IOEvent::CreateTask(new_task)).await;

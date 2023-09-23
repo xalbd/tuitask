@@ -1,3 +1,5 @@
+use std::cmp::min;
+
 use crate::{
     app::{App, AppReturn},
     key::Key,
@@ -6,17 +8,16 @@ use crate::{
 pub async fn do_action(app: &mut App, key: Key) -> AppReturn {
     match key {
         Key::Char('j') | Key::Down => {
-            app.task_list_state
-                .select(Some(match app.task_list_state.selected() {
-                    Some(i) => i + 1,
-                    None => 0,
-                }));
+            app.category_list_state.select(Some(min(
+                app.categories.len().saturating_sub(1),
+                app.category_list_state.selected().unwrap() + 1,
+            )));
         }
         Key::Char('k') | Key::Up => {
-            app.task_list_state.select(Some(
-                app.task_list_state
+            app.category_list_state.select(Some(
+                app.category_list_state
                     .selected()
-                    .unwrap_or(0)
+                    .unwrap()
                     .saturating_sub(1),
             ));
         }

@@ -2,6 +2,8 @@ mod categories;
 mod task_editor;
 mod upcoming;
 
+use std::collections::HashMap;
+
 use crate::{
     database::IOEvent,
     key::Key,
@@ -61,6 +63,9 @@ pub struct App {
 
     pub task_list: TaskList,
     pub task_list_state: ListState,
+
+    pub categories: HashMap<i32, String>,
+    pub category_list_state: ListState,
 }
 
 #[derive(PartialEq)]
@@ -84,13 +89,15 @@ impl App {
             status_text: "".to_string(),
             keybind_hints: "".to_string(),
             task_list: TaskList::new(),
-            task_list_state: ListState::default(),
+            task_list_state: ListState::default().with_selected(Some(0)),
+            categories: HashMap::new(),
+            category_list_state: ListState::default().with_selected(Some(0)),
         }
     }
 
     // Call to perform initial data loads
     pub async fn initialize(&mut self) {
-        self.dispatch(IOEvent::LoadTasks).await;
+        self.dispatch(IOEvent::LoadData).await;
         self.switch_mode(AppMode::Upcoming);
     }
 
