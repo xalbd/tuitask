@@ -31,8 +31,9 @@ async fn main() -> Result<(), Box<dyn error::Error>> {
     tokio::spawn(async move {
         let mut handler = IOHandler::new(app, pool);
         while let Some(io_event) = io_rx.recv().await {
-            // TODO: handle error
-            let _ = handler.handle_io(io_event).await;
+            if handler.handle_io(io_event).await.is_err() {
+                panic!("database io request failed");
+            };
         }
     });
 

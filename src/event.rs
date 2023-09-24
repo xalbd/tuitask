@@ -29,15 +29,22 @@ impl AppEventHandler {
         // Spawns thread to handle keypress events
         tokio::spawn(async move {
             loop {
+                // Handle key event during a tick
                 if crossterm::event::poll(tick_rate).unwrap() {
                     if let crossterm::event::Event::Key(key) = crossterm::event::read().unwrap() {
-                        let key = Key::from(key);
-                        // TODO: handle error
-                        let _ = event_tx.send(AppEvent::Input(key)).await;
+                        if event_tx
+                            .send(AppEvent::Input(Key::from(key)))
+                            .await
+                            .is_err()
+                        {
+                            panic!("event handler not receiving messages")
+                        };
                     }
                 }
-                // TODO: handle error
-                let _ = event_tx.send(AppEvent::Tick).await;
+                // Send tick event if no keystrokes were recorded in the tick
+                else if event_tx.send(AppEvent::Tick).await.is_err() {
+                    panic!("event handler not receiving tick")
+                }
 
                 if event_stopped.load(Ordering::Relaxed) {
                     break;

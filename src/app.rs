@@ -170,9 +170,8 @@ impl App {
 
     // Dispatch database work to seperate thread
     pub async fn dispatch(&self, action: IOEvent) {
-        // TODO: handle error
         if self.io_tx.send(action).await.is_err() {
-            panic!("database task not receiving messages");
+            panic!("database thread not receiving messages");
         }
     }
 }
