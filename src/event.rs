@@ -6,7 +6,7 @@ use std::{
     },
     time::Duration,
 };
-use tokio::sync::mpsc;
+use tokio::sync::mpsc::{self};
 
 pub enum AppEvent {
     Input(Key),
@@ -29,25 +29,20 @@ impl AppEventHandler {
         // Spawns thread to handle keypress events
         tokio::spawn(async move {
             loop {
-                // Handle key event during a tick
-                if crossterm::event::poll(tick_rate).unwrap() {
+                let event = if crossterm::event::poll(tick_rate).unwrap() {
                     if let crossterm::event::Event::Key(key) = crossterm::event::read().unwrap() {
-                        if event_tx
-                            .send(AppEvent::Input(Key::from(key)))
-                            .await
-                            .is_err()
-                        {
-                            panic!("event handler not receiving messages")
-                        };
+                        AppEvent::Input(Key::from(key))
+                    } else {
+                        AppEvent::Tick
                     }
-                }
-                // Send tick event if no keystrokes were recorded in the tick
-                else if event_tx.send(AppEvent::Tick).await.is_err() {
-                    panic!("event handler not receiving tick")
-                }
+                } else {
+                    AppEvent::Tick
+                };
 
                 if event_stopped.load(Ordering::Relaxed) {
                     break;
+                } else if event_tx.send(event).await.is_err() {
+                    panic!("event handler not receiving tick")
                 }
             }
         });
