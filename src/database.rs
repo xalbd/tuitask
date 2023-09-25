@@ -79,10 +79,11 @@ impl IOHandler {
     async fn update_task(&mut self, t: Task) -> Result<(), sqlx::Error> {
         self.update_status("updating task".to_string()).await;
 
-        sqlx::query("UPDATE task SET name = $1, due_date = $2, completed = $3 WHERE id = $4")
+        sqlx::query("UPDATE task SET name = $1, due_date = $2, completed = $3, category_id = $4 WHERE id = $5")
             .bind(t.name)
             .bind(t.due_date)
             .bind(t.completed)
+            .bind(t.category.id)
             .bind(t.id)
             .execute(&self.db_pool)
             .await?;

@@ -161,7 +161,7 @@ fn draw_categories<B: Backend>(f: &mut Frame<B>, r: Rect, app: &mut App) {
 fn draw_task_editor<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     // NOTE: calculate required lengths BEFORE rendering
     let task_editor_width = 50; // TODO: need to be changed to minimums instead of constants
-    let task_editor_height = 9;
+    let task_editor_height = 12;
 
     let frame_size = f.size();
     let editor_area = Rect::new(
@@ -174,7 +174,7 @@ fn draw_task_editor<B: Backend>(f: &mut Frame<B>, app: &mut App) {
 
     let hint_layout = Layout::default()
         .direction(Direction::Vertical)
-        .constraints(vec![Constraint::Min(8), Constraint::Min(1)])
+        .constraints(vec![Constraint::Min(0), Constraint::Length(1)])
         .split(editor_area);
 
     f.render_widget(
@@ -197,7 +197,11 @@ fn draw_task_editor<B: Backend>(f: &mut Frame<B>, app: &mut App) {
 
     let vertical_layout = Layout::default()
         .direction(Direction::Vertical)
-        .constraints(vec![Constraint::Percentage(50), Constraint::Percentage(50)])
+        .constraints(vec![
+            Constraint::Length(3),
+            Constraint::Length(3),
+            Constraint::Length(3),
+        ])
         .margin(1)
         .split(hint_layout[0]);
 
@@ -275,11 +279,26 @@ fn draw_task_editor<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     .block(Block::new().title("W").borders(Borders::ALL));
     f.render_widget(weekday, date_layout[3]);
 
+    let category = List::new(
+        app.categories
+            .iter()
+            .map(|c| ListItem::new(Text::from(c.name.clone())))
+            .collect::<Vec<ListItem>>(),
+    )
+    .block(Block::new().title("Category").borders(Borders::ALL))
+    .highlight_style(Style::new().italic())
+    .highlight_symbol(">");
+    f.render_stateful_widget(category, vertical_layout[2], &mut app.category_edit_state);
+
     let (active_area, active_index) = match app.task_edit_field {
         SelectedField::Name => (vertical_layout[0], app.name_edit.index),
         SelectedField::Year => (date_layout[0], app.year_edit.index),
         SelectedField::Month => (date_layout[1], app.month_edit.index),
         SelectedField::Date => (date_layout[2], app.date_edit.index),
+        SelectedField::Category => (Rect::default(), 0),
     };
-    f.set_cursor(active_area.x + active_index as u16 + 1, active_area.y + 1);
+
+    if app.task_edit_field != SelectedField::Category {
+        f.set_cursor(active_area.x + active_index as u16 + 1, active_area.y + 1);
+    }
 }

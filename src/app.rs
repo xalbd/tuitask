@@ -42,6 +42,7 @@ pub enum SelectedField {
     Year,
     Month,
     Date,
+    Category,
 }
 
 pub struct App {
@@ -55,6 +56,7 @@ pub struct App {
     pub year_edit: TextBox,
     pub month_edit: TextBox,
     pub date_edit: TextBox,
+    pub category_edit_state: ListState,
     pub editing_task: bool,
 
     pub status_text: String,
@@ -84,6 +86,7 @@ impl App {
             year_edit: TextBox::new(4),
             month_edit: TextBox::new(2),
             date_edit: TextBox::new(2),
+            category_edit_state: ListState::default(),
             editing_task: false,
             status_text: "".to_string(),
             keybind_hints: "".to_string(),

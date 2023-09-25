@@ -1,3 +1,5 @@
+use std::cmp::min;
+
 use crate::{
     app::{App, AppReturn, SelectedField, TextBox},
     database::IOEvent,
@@ -5,52 +7,81 @@ use crate::{
     task::{Task, TaskDate},
 };
 use chrono::{Datelike, NaiveDate};
+use ratatui::widgets::ListState;
 
 pub async fn do_action(app: &mut App, key: Key) -> AppReturn {
-    let current_field: &mut TextBox = match app.task_edit_field {
-        SelectedField::Name => &mut app.name_edit,
-        SelectedField::Year => &mut app.year_edit,
-        SelectedField::Month => &mut app.month_edit,
-        SelectedField::Date => &mut app.date_edit,
+    fn handle_textbox(current_field: &mut TextBox, key: &Key, verify: fn(&str) -> bool) {
+        match key {
+            Key::Number(c) | Key::Char(c) => {
+                let mut proposed_text = current_field.text.clone();
+                proposed_text.insert(current_field.index, *c);
+
+                if proposed_text.len() <= current_field.max_length && verify(&proposed_text) {
+                    *current_field = TextBox {
+                        text: proposed_text,
+                        index: current_field.index + 1,
+                        max_length: current_field.max_length,
+                    };
+                }
+            }
+            Key::Left => {
+                if current_field.index > 0 {
+                    current_field.index -= 1;
+                }
+            }
+            Key::Right => {
+                if current_field.index < current_field.text.len() {
+                    current_field.index += 1;
+                }
+            }
+            Key::Backspace => {
+                if current_field.index > 0 {
+                    current_field.text.remove(current_field.index - 1);
+                    current_field.index -= 1;
+                }
+            }
+            _ => {}
+        };
+    }
+
+    fn handle_selector(num_categories: usize, category_edit_state: &mut ListState, key: &Key) {
+        match key {
+            Key::Char('k') | Key::Up => {
+                category_edit_state.select(Some(
+                    category_edit_state.selected().unwrap().saturating_sub(1),
+                ));
+            }
+            Key::Char('j') | Key::Down => {
+                category_edit_state.select(Some(min(
+                    num_categories.saturating_sub(1),
+                    category_edit_state.selected().unwrap() + 1,
+                )));
+            }
+            _ => {}
+        };
+    }
+
+    match app.task_edit_field {
+        SelectedField::Name => handle_textbox(&mut app.name_edit, &key, |_x| true),
+        SelectedField::Year => {
+            handle_textbox(&mut app.year_edit, &key, |x| x.parse::<isize>().is_ok())
+        }
+        SelectedField::Month => {
+            handle_textbox(&mut app.month_edit, &key, |x| x.parse::<isize>().is_ok())
+        }
+        SelectedField::Date => {
+            handle_textbox(&mut app.date_edit, &key, |x| x.parse::<isize>().is_ok())
+        }
+        SelectedField::Category => {
+            handle_selector(app.categories.len(), &mut app.category_edit_state, &key)
+        }
     };
 
     match key {
         Key::Esc | Key::Ctrl('c') => {
             app.disable_pop_up();
         }
-        Key::Number(c) | Key::Char(c) => {
-            let mut proposed_text = current_field.text.clone();
-            proposed_text.insert(current_field.index, c);
 
-            if proposed_text.len() <= current_field.max_length
-                && match app.task_edit_field {
-                    SelectedField::Name => true,
-                    _ => proposed_text.parse::<isize>().is_ok(),
-                }
-            {
-                *current_field = TextBox {
-                    text: proposed_text,
-                    index: current_field.index + 1,
-                    max_length: current_field.max_length,
-                };
-            }
-        }
-        Key::Left => {
-            if current_field.index > 0 {
-                current_field.index -= 1;
-            }
-        }
-        Key::Right => {
-            if current_field.index < current_field.text.len() {
-                current_field.index += 1;
-            }
-        }
-        Key::Backspace => {
-            if current_field.index > 0 {
-                current_field.text.remove(current_field.index - 1);
-                current_field.index -= 1;
-            }
-        }
         Key::Enter => {
             // TODO: needs to automatically select the new/edited task in the list
             if !app.name_edit.text.is_empty()
@@ -74,6 +105,8 @@ pub async fn do_action(app: &mut App, key: Key) -> AppReturn {
                         )
                         .unwrap(),
                         name: app.name_edit.text.clone(),
+                        category: app.categories[app.category_edit_state.selected().unwrap()]
+                            .clone(),
                         ..editing_task.clone()
                     };
 
@@ -90,7 +123,8 @@ pub async fn do_action(app: &mut App, key: Key) -> AppReturn {
                         .unwrap(),
                         name: app.name_edit.text.clone(),
                         completed: false,
-                        category: app.categories[0].clone(), // TODO: need to be able to edit this
+                        category: app.categories[app.category_edit_state.selected().unwrap()]
+                            .clone(),
                         id: -1,
                     };
                     app.dispatch(IOEvent::CreateTask(new_task)).await;
@@ -99,25 +133,24 @@ pub async fn do_action(app: &mut App, key: Key) -> AppReturn {
             }
         }
         Key::Tab => {
-            let next = match app.task_edit_field {
+            app.task_edit_field = match app.task_edit_field {
                 SelectedField::Name => SelectedField::Year,
                 SelectedField::Year => SelectedField::Month,
                 SelectedField::Month => SelectedField::Date,
-                SelectedField::Date => SelectedField::Name,
+                SelectedField::Date => SelectedField::Category,
+                SelectedField::Category => SelectedField::Name,
             };
-
-            app.task_edit_field = next;
         }
         _ => (),
-    }
+    };
+
     AppReturn::Continue
 }
 
 pub fn initialize(app: &mut App) -> AppReturn {
-    let (name, year, month, date): (String, String, String, String);
-    match &app.task_list.current_taskdate {
-        TaskDate::Task(t) => {
-            (name, year, month, date) = (
+    let (name, year, month, date, category_index): (String, String, String, String, usize) =
+        match &app.task_list.current_taskdate {
+            TaskDate::Task(t) => (
                 if app.editing_task {
                     t.name.clone()
                 } else {
@@ -126,17 +159,19 @@ pub fn initialize(app: &mut App) -> AppReturn {
                 t.due_date.year().to_string(),
                 t.due_date.month().to_string(),
                 t.due_date.day().to_string(),
-            );
-        }
-        TaskDate::Date(d) => {
-            (name, year, month, date) = (
+                app.categories
+                    .iter()
+                    .position(|c| c.id == t.category.id)
+                    .unwrap(),
+            ),
+            TaskDate::Date(d) => (
                 "".to_string(),
                 d.year().to_string(),
                 d.month().to_string(),
                 d.day().to_string(),
-            );
-        }
-    };
+                0,
+            ),
+        };
 
     app.name_edit = TextBox {
         index: name.len(),
@@ -158,8 +193,9 @@ pub fn initialize(app: &mut App) -> AppReturn {
         text: date,
         ..app.date_edit
     };
-    app.keybind_hints = "Exit[esc/ctrl-c]".to_string();
+    app.category_edit_state.select(Some(category_index));
     app.task_edit_field = SelectedField::Name;
+    app.keybind_hints = "Exit[esc/ctrl-c]".to_string();
 
     AppReturn::Continue
 }
