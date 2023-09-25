@@ -8,6 +8,7 @@ pub enum Key {
     Enter,
     Esc,
     Tab,
+    ShiftTab,
     Backspace,
     Left,
     Right,
@@ -36,6 +37,10 @@ impl From<KeyEvent> for Key {
                 code: KeyCode::Enter,
                 ..
             } => Key::Enter,
+            KeyEvent {
+                code: KeyCode::BackTab,
+                ..
+            } => Key::ShiftTab,
             KeyEvent {
                 code: KeyCode::Tab, ..
             } => Key::Tab,

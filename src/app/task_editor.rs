@@ -81,7 +81,6 @@ pub async fn do_action(app: &mut App, key: Key) -> AppReturn {
         Key::Esc | Key::Ctrl('c') => {
             app.disable_pop_up();
         }
-
         Key::Enter => {
             // TODO: needs to automatically select the new/edited task in the list
             if !app.name_edit.text.is_empty()
@@ -139,6 +138,15 @@ pub async fn do_action(app: &mut App, key: Key) -> AppReturn {
                 SelectedField::Month => SelectedField::Date,
                 SelectedField::Date => SelectedField::Category,
                 SelectedField::Category => SelectedField::Name,
+            };
+        }
+        Key::ShiftTab => {
+            app.task_edit_field = match app.task_edit_field {
+                SelectedField::Name => SelectedField::Category,
+                SelectedField::Year => SelectedField::Name,
+                SelectedField::Month => SelectedField::Year,
+                SelectedField::Date => SelectedField::Month,
+                SelectedField::Category => SelectedField::Date,
             };
         }
         _ => (),

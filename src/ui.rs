@@ -161,7 +161,12 @@ fn draw_categories<B: Backend>(f: &mut Frame<B>, r: Rect, app: &mut App) {
 fn draw_task_editor<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     // NOTE: calculate required lengths BEFORE rendering
     let task_editor_width = 50; // TODO: need to be changed to minimums instead of constants
-    let task_editor_height = 12;
+    let category_editor_height = if app.task_edit_field == SelectedField::Category {
+        8
+    } else {
+        3
+    };
+    let task_editor_height = 9 + category_editor_height;
 
     let frame_size = f.size();
     let editor_area = Rect::new(
@@ -279,16 +284,26 @@ fn draw_task_editor<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     .block(Block::new().title("W").borders(Borders::ALL));
     f.render_widget(weekday, date_layout[3]);
 
-    let category = List::new(
-        app.categories
-            .iter()
-            .map(|c| ListItem::new(Text::from(c.name.clone())))
-            .collect::<Vec<ListItem>>(),
-    )
-    .block(Block::new().title("Category").borders(Borders::ALL))
-    .highlight_style(Style::new().italic())
-    .highlight_symbol(">");
-    f.render_stateful_widget(category, vertical_layout[2], &mut app.category_edit_state);
+    if app.task_edit_field == SelectedField::Category {
+        let category = List::new(
+            app.categories
+                .iter()
+                .map(|c| ListItem::new(Text::from(c.name.clone())))
+                .collect::<Vec<ListItem>>(),
+        )
+        .block(Block::new().title("Category").borders(Borders::ALL))
+        .highlight_style(Style::new().italic())
+        .highlight_symbol(">");
+        f.render_stateful_widget(category, vertical_layout[2], &mut app.category_edit_state);
+    } else {
+        let current_category = Paragraph::new(
+            app.categories[app.category_edit_state.selected().unwrap()]
+                .name
+                .clone(),
+        )
+        .block(Block::new().title("Category").borders(Borders::ALL));
+        f.render_widget(current_category, vertical_layout[2]);
+    }
 
     let (active_area, active_index) = match app.task_edit_field {
         SelectedField::Name => (vertical_layout[0], app.name_edit.index),
