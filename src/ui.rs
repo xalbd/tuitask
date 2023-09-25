@@ -86,10 +86,8 @@ fn draw_upcoming<B: Backend>(f: &mut Frame<B>, r: Rect, app: &mut App) {
                         format!(
                             "{:-<width$}{}",
                             t.name.clone(),
-                            app.categories.get(&t.category_id).unwrap(),
-                            width = task_display_width
-                                - app.categories.get(&t.category_id).unwrap().len()
-                                - 3
+                            t.category.name,
+                            width = task_display_width - t.category.name.len() - 3
                         ),
                         Style::new().add_modifier(if t.completed {
                             Modifier::CROSSED_OUT
@@ -129,12 +127,10 @@ fn draw_categories<B: Backend>(f: &mut Frame<B>, r: Rect, app: &mut App) {
         .constraints([Constraint::Percentage(35), Constraint::Percentage(65)])
         .split(r);
 
-    let mut categories: Vec<(&String, &i32)> = app.categories.iter().map(|c| (c.1, c.0)).collect();
-    categories.sort();
-
-    let categories_listitems: Vec<ListItem> = categories
+    let categories_listitems: Vec<ListItem> = app
+        .categories
         .iter()
-        .map(|&i| ListItem::new(Text::from(i.0.clone())))
+        .map(|i| ListItem::new(Text::from(i.name.clone())))
         .collect();
 
     let categories_list = List::new(categories_listitems)
@@ -147,7 +143,7 @@ fn draw_categories<B: Backend>(f: &mut Frame<B>, r: Rect, app: &mut App) {
         .task_list
         .tasks
         .iter()
-        .filter(|t| &t.category_id == categories[app.category_list_state.selected().unwrap()].1)
+        .filter(|t| t.category.id == app.categories[app.category_list_state.selected().unwrap()].id)
         .collect();
 
     let current_category_listitems: Vec<ListItem> = current_category_tasks

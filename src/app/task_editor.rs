@@ -90,7 +90,7 @@ pub async fn do_action(app: &mut App, key: Key) -> AppReturn {
                         .unwrap(),
                         name: app.name_edit.text.clone(),
                         completed: false,
-                        category_id: 1,
+                        category: app.categories[0].clone(), // TODO: need to be able to edit this
                         id: -1,
                     };
                     app.dispatch(IOEvent::CreateTask(new_task)).await;

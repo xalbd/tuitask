@@ -2,9 +2,8 @@ mod categories;
 mod task_editor;
 mod upcoming;
 
-use std::collections::HashMap;
-
 use crate::{
+    category::Category,
     database::IOEvent,
     key::Key,
     task::{TaskDate, TaskList},
@@ -64,7 +63,7 @@ pub struct App {
     pub task_list: TaskList,
     pub task_list_state: ListState,
 
-    pub categories: HashMap<i32, String>,
+    pub categories: Vec<Category>,
     pub category_list_state: ListState,
 }
 
@@ -90,7 +89,7 @@ impl App {
             keybind_hints: "".to_string(),
             task_list: TaskList::new(),
             task_list_state: ListState::default().with_selected(Some(0)),
-            categories: HashMap::new(),
+            categories: Vec::new(),
             category_list_state: ListState::default().with_selected(Some(0)),
         }
     }
@@ -136,6 +135,8 @@ impl App {
     }
 
     fn switch_mode(&mut self, mode: AppMode) -> AppReturn {
+        self.task_list.tasks.retain(|t| !t.completed); // Purge completed tasks when switching views
+
         match mode {
             AppMode::Upcoming => {
                 upcoming::initialize(self);

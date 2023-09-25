@@ -1,4 +1,5 @@
 mod app;
+mod category;
 mod database;
 mod event;
 mod key;

@@ -1,12 +1,14 @@
 use chrono::{offset::Local, Days, NaiveDate};
 
+use crate::category::Category;
+
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Task {
     pub due_date: NaiveDate,
     pub name: String,
     pub completed: bool,
     pub id: i32,
-    pub category_id: i32,
+    pub category: Category,
 }
 
 #[derive(Clone, PartialEq)]

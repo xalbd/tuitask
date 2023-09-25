@@ -1,6 +1,6 @@
-use crate::{app::App, task::Task};
+use crate::{app::App, category::Category, task::Task};
 use sqlx::Row;
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 pub enum IOEvent {
     LoadData,
@@ -36,7 +36,7 @@ impl IOHandler {
             .fetch_all(&self.db_pool)
             .await?;
 
-        let categories = category_rows
+        let categories: HashMap<i32, String> = category_rows
             .iter()
             .map(|r| (r.get("id"), r.get("name")))
             .collect();
@@ -52,13 +52,25 @@ impl IOHandler {
                 name: r.get("name"),
                 due_date: r.get("due_date"),
                 completed: r.get("completed"),
-                category_id: r.get("category_id"),
+                category: {
+                    let category_id: i32 = r.get("category_id");
+                    Category {
+                        name: categories.get(&category_id).unwrap().to_string(),
+                        id: category_id,
+                    }
+                },
             })
             .collect();
 
         let mut app = self.app.lock().await;
         app.task_list.tasks = task_list;
-        app.categories = categories;
+        app.categories = categories
+            .iter()
+            .map(|c| Category {
+                id: *c.0,
+                name: c.1.to_string(),
+            })
+            .collect();
         app.status_text = "data loaded".to_string();
 
         Ok(())
@@ -88,17 +100,37 @@ impl IOHandler {
         )
         .bind(t.name.clone())
         .bind(t.due_date)
-        .bind(t.category_id.clone())
+        .bind(t.category.id)
         .fetch_one(&self.db_pool)
-        .await?;
+        .await?
+        .get("id");
 
         let mut app = self.app.lock().await;
         app.task_list.tasks.push(Task {
-            id: created_task_id.get("id"),
+            id: created_task_id,
             ..t
         });
         app.task_list.tasks.sort();
         app.status_text = "task created".to_string();
+
+        Ok(())
+    }
+
+    async fn create_category(&mut self, name: String) -> Result<(), sqlx::Error> {
+        self.update_status("creating category".into()).await;
+
+        let created_category_id =
+            sqlx::query("INSERT INTO category (name) VALUES ($1) RETURNING id")
+                .bind(name.clone())
+                .fetch_one(&self.db_pool)
+                .await?
+                .get("id");
+
+        let mut app = self.app.lock().await;
+        app.categories.push(Category {
+            name,
+            id: created_category_id,
+        });
 
         Ok(())
     }
