@@ -1,4 +1,5 @@
 mod categories;
+mod category_editor;
 mod task_editor;
 mod upcoming;
 
@@ -18,6 +19,7 @@ pub enum AppMode {
 
 pub enum AppPopUp {
     TaskEditor,
+    CategoryEditor,
 }
 
 #[derive(Clone, Default)]
@@ -58,6 +60,7 @@ pub struct App {
     pub date_edit: TextBox,
     pub category_edit_state: ListState,
     pub editing_task: bool,
+    pub editing_category: bool,
 
     pub status_text: String,
     pub keybind_hints: String,
@@ -82,12 +85,13 @@ impl App {
             mode: AppMode::Upcoming,
             pop_up: None,
             task_edit_field: SelectedField::Name,
-            name_edit: TextBox::new(36), // TODO: can this be infinite/higher?
+            name_edit: TextBox::new(36), // TODO: can this be infinite/higher? also this restricts both category and task name lengths now and needs to be dynamic, maybe
             year_edit: TextBox::new(4),
             month_edit: TextBox::new(2),
             date_edit: TextBox::new(2),
             category_edit_state: ListState::default(),
             editing_task: false,
+            editing_category: false, //TODO: NEED TO SET THIS PROPERLy
             status_text: "".to_string(),
             keybind_hints: "".to_string(),
             task_list: TaskList::new(),
@@ -133,6 +137,7 @@ impl App {
             let p = self.pop_up.as_ref().unwrap();
             match p {
                 AppPopUp::TaskEditor => task_editor::do_action(self, key).await,
+                AppPopUp::CategoryEditor => category_editor::do_action(self, key).await,
             }
         }
     }
@@ -157,6 +162,9 @@ impl App {
         match pop_up {
             AppPopUp::TaskEditor => {
                 task_editor::initialize(self);
+            }
+            AppPopUp::CategoryEditor => {
+                category_editor::initialize(self);
             }
         }
 

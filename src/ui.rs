@@ -117,6 +117,9 @@ fn draw_upcoming<B: Backend>(f: &mut Frame<B>, r: Rect, app: &mut App) {
             AppPopUp::TaskEditor => {
                 draw_task_editor(f, app);
             }
+            AppPopUp::CategoryEditor => {
+                draw_category_editor(f, app);
+            }
         }
     }
 }
@@ -317,3 +320,5 @@ fn draw_task_editor<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         f.set_cursor(active_area.x + active_index as u16 + 1, active_area.y + 1);
     }
 }
+
+fn draw_category_editor<B: Backend>(f: &mut Frame<B>, app: &mut App) {}
