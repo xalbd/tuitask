@@ -20,7 +20,7 @@ pub async fn do_action(app: &mut App, key: Key) -> AppReturn {
                     *current_field = TextBox {
                         text: proposed_text,
                         index: current_field.index + 1,
-                        max_length: current_field.max_length,
+                        ..*current_field
                     };
                 }
             }
