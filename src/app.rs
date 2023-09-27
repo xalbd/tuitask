@@ -130,7 +130,19 @@ impl App {
                         }
                         _ => upcoming::do_action(self, key).await,
                     },
-                    AppMode::Categories => categories::do_action(self, key).await,
+                    AppMode::Categories => match key {
+                        Key::Char('e') => {
+                            self.editing_category = true;
+                            self.enable_pop_up(AppPopUp::CategoryEditor);
+                            AppReturn::Continue
+                        }
+                        Key::Char('a') => {
+                            self.editing_category = false;
+                            self.enable_pop_up(AppPopUp::CategoryEditor);
+                            AppReturn::Continue
+                        }
+                        _ => categories::do_action(self, key).await,
+                    },
                 },
             }
         } else {

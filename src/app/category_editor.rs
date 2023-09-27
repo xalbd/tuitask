@@ -1,14 +1,16 @@
 use crate::{
-    app::{App, AppReturn},
+    app::{App, AppReturn, TextBox},
+    database::IOEvent,
     key::Key,
 };
-
-use super::TextBox;
 
 pub async fn do_action(app: &mut App, key: Key) -> AppReturn {
     let name_text = &mut app.name_edit;
 
     match key {
+        Key::Esc | Key::Ctrl('c') => {
+            app.disable_pop_up();
+        }
         Key::Number(c) | Key::Char(c) => {
             let mut proposed_text = name_text.text.clone();
             proposed_text.insert(name_text.index, c);
@@ -35,6 +37,33 @@ pub async fn do_action(app: &mut App, key: Key) -> AppReturn {
             if name_text.index > 0 {
                 name_text.text.remove(name_text.index - 1);
                 name_text.index -= 1;
+            }
+        }
+        Key::Enter => {
+            if !app.name_edit.text.is_empty() {
+                if app.editing_category {
+                    let editing_id = app.categories[app.category_list_state.selected().unwrap()].id;
+                    let new_name = app.name_edit.text.clone();
+
+                    app.categories[app.category_list_state.selected().unwrap()].name =
+                        new_name.clone();
+
+                    app.task_list
+                        .tasks
+                        .iter_mut()
+                        .filter(|t| t.category.id == editing_id)
+                        .for_each(|t| t.category.name = new_name.to_string());
+
+                    app.dispatch(IOEvent::UpdateCategory(
+                        app.categories[app.category_list_state.selected().unwrap()].clone(),
+                    ))
+                    .await;
+                } else {
+                    app.dispatch(IOEvent::CreateCategory(app.name_edit.text.clone()))
+                        .await;
+                }
+
+                app.disable_pop_up();
             }
         }
         _ => {}

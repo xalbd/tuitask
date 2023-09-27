@@ -6,6 +6,8 @@ pub enum IOEvent {
     LoadData,
     UpdateTask(Task),
     CreateTask(Task),
+    UpdateCategory(Category),
+    CreateCategory(String),
 }
 
 pub struct IOHandler {
@@ -23,6 +25,8 @@ impl IOHandler {
             IOEvent::LoadData => self.load_data().await?,
             IOEvent::UpdateTask(t) => self.update_task(t).await?,
             IOEvent::CreateTask(t) => self.create_task(t).await?,
+            IOEvent::UpdateCategory(c) => self.update_category(c).await?,
+            IOEvent::CreateCategory(name) => self.create_category(name).await?,
         };
 
         Ok(())
@@ -113,6 +117,20 @@ impl IOHandler {
         });
         app.task_list.tasks.sort();
         app.status_text = "task created".to_string();
+
+        Ok(())
+    }
+
+    async fn update_category(&mut self, c: Category) -> Result<(), sqlx::Error> {
+        self.update_status("updating category".to_string()).await;
+
+        sqlx::query("UPDATE category SET name = $1 WHERE id = $2")
+            .bind(c.name)
+            .bind(c.id)
+            .execute(&self.db_pool)
+            .await?;
+
+        self.update_status("update successful".to_string()).await;
 
         Ok(())
     }

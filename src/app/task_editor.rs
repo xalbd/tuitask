@@ -10,57 +10,6 @@ use chrono::{Datelike, NaiveDate};
 use ratatui::widgets::ListState;
 
 pub async fn do_action(app: &mut App, key: Key) -> AppReturn {
-    fn handle_textbox(current_field: &mut TextBox, key: &Key, verify: fn(&str) -> bool) {
-        match key {
-            Key::Number(c) | Key::Char(c) => {
-                let mut proposed_text = current_field.text.clone();
-                proposed_text.insert(current_field.index, *c);
-
-                if proposed_text.len() <= current_field.max_length && verify(&proposed_text) {
-                    *current_field = TextBox {
-                        text: proposed_text,
-                        index: current_field.index + 1,
-                        ..*current_field
-                    };
-                }
-            }
-            Key::Left => {
-                if current_field.index > 0 {
-                    current_field.index -= 1;
-                }
-            }
-            Key::Right => {
-                if current_field.index < current_field.text.len() {
-                    current_field.index += 1;
-                }
-            }
-            Key::Backspace => {
-                if current_field.index > 0 {
-                    current_field.text.remove(current_field.index - 1);
-                    current_field.index -= 1;
-                }
-            }
-            _ => {}
-        };
-    }
-
-    fn handle_selector(num_categories: usize, category_edit_state: &mut ListState, key: &Key) {
-        match key {
-            Key::Char('k') | Key::Up => {
-                category_edit_state.select(Some(
-                    category_edit_state.selected().unwrap().saturating_sub(1),
-                ));
-            }
-            Key::Char('j') | Key::Down => {
-                category_edit_state.select(Some(min(
-                    num_categories.saturating_sub(1),
-                    category_edit_state.selected().unwrap() + 1,
-                )));
-            }
-            _ => {}
-        };
-    }
-
     match app.task_edit_field {
         SelectedField::Name => handle_textbox(&mut app.name_edit, &key, |_x| true),
         SelectedField::Year => {
@@ -111,7 +60,6 @@ pub async fn do_action(app: &mut App, key: Key) -> AppReturn {
 
                     let io_event = IOEvent::UpdateTask(editing_task.clone());
                     app.dispatch(io_event).await;
-                    app.disable_pop_up();
                 } else {
                     let new_task = Task {
                         due_date: NaiveDate::from_ymd_opt(
@@ -127,8 +75,9 @@ pub async fn do_action(app: &mut App, key: Key) -> AppReturn {
                         id: -1,
                     };
                     app.dispatch(IOEvent::CreateTask(new_task)).await;
-                    app.disable_pop_up();
                 }
+
+                app.disable_pop_up();
             }
         }
         Key::Tab => {
@@ -151,6 +100,57 @@ pub async fn do_action(app: &mut App, key: Key) -> AppReturn {
         }
         _ => (),
     };
+
+    fn handle_textbox(current_field: &mut TextBox, key: &Key, verify: fn(&str) -> bool) {
+        match key {
+            Key::Number(c) | Key::Char(c) => {
+                let mut proposed_text = current_field.text.clone();
+                proposed_text.insert(current_field.index, *c);
+
+                if proposed_text.len() <= current_field.max_length && verify(&proposed_text) {
+                    *current_field = TextBox {
+                        text: proposed_text,
+                        index: current_field.index + 1,
+                        ..*current_field
+                    };
+                }
+            }
+            Key::Left => {
+                if current_field.index > 0 {
+                    current_field.index -= 1;
+                }
+            }
+            Key::Right => {
+                if current_field.index < current_field.text.len() {
+                    current_field.index += 1;
+                }
+            }
+            Key::Backspace => {
+                if current_field.index > 0 {
+                    current_field.text.remove(current_field.index - 1);
+                    current_field.index -= 1;
+                }
+            }
+            _ => {}
+        };
+    }
+
+    fn handle_selector(num_categories: usize, category_edit_state: &mut ListState, key: &Key) {
+        match key {
+            Key::Char('k') | Key::Up => {
+                category_edit_state.select(Some(
+                    category_edit_state.selected().unwrap().saturating_sub(1),
+                ));
+            }
+            Key::Char('j') | Key::Down => {
+                category_edit_state.select(Some(min(
+                    num_categories.saturating_sub(1),
+                    category_edit_state.selected().unwrap() + 1,
+                )));
+            }
+            _ => {}
+        };
+    }
 
     AppReturn::Continue
 }

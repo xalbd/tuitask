@@ -117,9 +117,7 @@ fn draw_upcoming<B: Backend>(f: &mut Frame<B>, r: Rect, app: &mut App) {
             AppPopUp::TaskEditor => {
                 draw_task_editor(f, app);
             }
-            AppPopUp::CategoryEditor => {
-                draw_category_editor(f, app);
-            }
+            _ => (),
         }
     }
 }
@@ -159,6 +157,15 @@ fn draw_categories<B: Backend>(f: &mut Frame<B>, r: Rect, app: &mut App) {
         .highlight_style(Style::new().italic())
         .highlight_symbol(">");
     f.render_widget(current_category_list, blocks[1]);
+
+    if app.pop_up.is_some() {
+        match app.pop_up.as_ref().unwrap() {
+            AppPopUp::CategoryEditor => {
+                draw_category_editor(f, app);
+            }
+            _ => (),
+        }
+    }
 }
 
 fn draw_task_editor<B: Backend>(f: &mut Frame<B>, app: &mut App) {
@@ -321,4 +328,52 @@ fn draw_task_editor<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     }
 }
 
-fn draw_category_editor<B: Backend>(f: &mut Frame<B>, app: &mut App) {}
+fn draw_category_editor<B: Backend>(f: &mut Frame<B>, app: &mut App) {
+    // NOTE: calculate required lengths BEFORE rendering
+    let category_editor_width = 50; // TODO: need to be changed to minimums instead of constants
+    let category_editor_height = 6;
+
+    let frame_size = f.size();
+    let editor_area = Rect::new(
+        frame_size.width.saturating_sub(category_editor_width) / 2,
+        frame_size.height.saturating_sub(category_editor_height) / 2,
+        category_editor_width.min(frame_size.width),
+        category_editor_height.min(frame_size.height),
+    );
+    f.render_widget(Clear, editor_area);
+
+    let hint_layout = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints(vec![Constraint::Min(0), Constraint::Length(1)])
+        .split(editor_area);
+
+    f.render_widget(
+        Block::new()
+            .title(if app.editing_category {
+                format!(
+                    "Edit \"{}\"",
+                    app.categories[app.category_list_state.selected().unwrap()].name
+                ) // TODO: overflow behavior
+            } else {
+                "Add Category".to_string()
+            })
+            .borders(Borders::ALL),
+        hint_layout[0],
+    );
+
+    let hint = Paragraph::new("Submit[Enter]");
+    f.render_widget(hint, hint_layout[1]);
+
+    let vertical_layout = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints(vec![Constraint::Length(3)])
+        .margin(1)
+        .split(hint_layout[0]);
+
+    let textarea = Paragraph::new(app.name_edit.text.clone())
+        .block(Block::new().title("Name").borders(Borders::ALL));
+    f.render_widget(textarea, vertical_layout[0]);
+
+    let (active_area, active_index) = (vertical_layout[0], app.name_edit.index);
+    f.set_cursor(active_area.x + active_index as u16 + 1, active_area.y + 1);
+}
